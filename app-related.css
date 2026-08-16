@@ -1,0 +1,66 @@
+.fetch-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.fetch-buttons button {
+  white-space: nowrap;
+}
+
+.related-results {
+  margin-top: 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 16px;
+  background: rgba(255,255,255,.018);
+}
+
+.related-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.related-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.related-row {
+  display: grid;
+  grid-template-columns: minmax(120px, .65fr) minmax(220px, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.related-id {
+  color: var(--text);
+  font: 700 14px/1.2 "Segoe UI", sans-serif;
+}
+
+.related-meta {
+  color: var(--muted);
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.related-row button {
+  min-height: 34px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+@media (max-width: 760px) {
+  .fetch-buttons {
+    flex-direction: column;
+  }
+
+  .related-row {
+    grid-template-columns: 1fr;
+  }
+}

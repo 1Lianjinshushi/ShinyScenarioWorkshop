@@ -1,0 +1,25 @@
+assets/
+config.json
+fonts/
+exports/
+output/
+tmp/
+translations/
+__pycache__/
+tests/__pycache__/
+docs/Quick-Guide-ZH.pdf
+001.png
+002.png
+003.png
+004.png
+Chinese.png
+English.png
+GreenScreen.png
+SwitchLanguage.png
+feather.png
+popup_idol.png
+popup_te.png
+# LOCAL_MONITOR_BEGIN
+monitor/game-update-state.json
+scripts/ShinyScenarioUpdateMonitor.user.js
+# LOCAL_MONITOR_END

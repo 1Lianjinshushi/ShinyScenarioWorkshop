@@ -11,7 +11,9 @@
 - Windows 便携版与每版 SHA256：请从
   [GitHub Releases](https://github.com/1Lianjinshushi/ShinyScenarioWorkshop/releases/latest)
   下载。
-- 图文说明书：[`docs/Quick-Guide-ZH.pdf`](./docs/Quick-Guide-ZH.pdf)。
+- 图文说明书：从
+  [`Quick-Guide-ZH.pdf`](https://github.com/1Lianjinshushi/ShinyScenarioWorkshop/releases/latest/download/Quick-Guide-ZH.pdf)
+  下载。
 - 版本维护记录：[`CHANGELOG.md`](./CHANGELOG.md)。
 
 公开源码仓库不提交字体、剧情资源、用户翻译、缓存、导出文件、个人运行状态或
@@ -236,4 +238,3 @@ http://127.0.0.1:8000/?eventType=produce_events&eventId=202701011&language=cn&so
 ```
 
 播放器保留 `source=auto`（本地优先）、`source=remote` 和 `source=local` 三种资源模式。
-
