@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Shiny Scenario Workshop</title>
+    <link rel="stylesheet" href="./app.css">
+    <link rel="stylesheet" href="./app-related.css">
+</head>
+<body>
+    <main class="shell">
+        <header class="hero">
+            <div>
+                <p class="eyebrow">SHINY COLORS · LOCAL TOOL</p>
+                <h1>闪耀色彩剧情工坊</h1>
+                <p class="lede">一个工作台完成剧情抓取、原版播放、翻译合成、实时编辑与演出资源修复；资源库集中提供完整目录和更新日志。</p>
+            </div>
+            <a class="quiet-link" href="./">直接打开播放器</a>
+        </header>
+
+        <section class="panel fetch-panel" aria-labelledby="fetch-title">
+            <div class="panel-body">
+                <div class="section-heading">
+                    <div>
+                        <h2 id="fetch-title">剧情播放、翻译与编辑</h2>
+                        <p>可直接输入序列号，也可导入单篇或整组汉化 CSV 自动识别并载入剧情；日文原版、汉化播放、编辑模式与卡图修复均在此完成。</p>
+                    </div>
+                    <span id="source-badge" class="badge">尚未载入</span>
+                </div>
+
+                <div class="fetch-grid">
+                    <label>
+                        <span>剧情分类</span>
+                        <select id="event-type">
+                            <option value="produce_events">produce_events</option>
+                            <option value="special_communications">special_communications</option>
+                            <option value="game_event_communications">game_event_communications</option>
+                            <option value="mypage_communications">mypage_communications</option>
+                            <option value="produce_communications">produce_communications</option>
+                            <option value="produce_communication_auditions">produce_communication_auditions</option>
+                            <option value="produce_communication_cheers">produce_communication_cheers</option>
+                            <option value="produce_communication_judges">produce_communication_judges</option>
+                            <option value="produce_communication_promise_results">produce_communication_promise_results</option>
+                            <option value="produce_communication_televisions">produce_communication_televisions</option>
+                            <option value="produce_communications_promises">produce_communications_promises</option>
+                            <option value="business_unit_communication">business_unit_communication</option>
+                            <option value="support_skills">support_skills</option>
+                        </select>
+                    </label>
+                    <label>
+                        <span>剧情序列号</span>
+                        <input id="event-id" inputmode="numeric" value="202701011" autocomplete="off" spellcheck="false">
+                    </label>
+                    <div class="fetch-buttons">
+                        <button id="fetch-scenario" class="primary">抓取当前剧情</button>
+                        <button id="fetch-related">提取关联剧情</button>
+                    </div>
+                </div>
+                <div id="scenario-summary" class="summary-grid" hidden>
+                    <div><strong id="track-count">0</strong><span>轨道</span></div>
+                    <div><strong id="dialogue-count">0</strong><span>对白</span></div>
+                    <div><strong id="speaker-count">0</strong><span>发言人</span></div>
+                    <div><strong id="story-resource-count">0</strong><span>剧情资源</span></div>
+                </div>
+
+                <div class="action-row">
+                    <button id="download-japanese" disabled>下载原版 JSON</button>
+                    <button id="play-japanese" disabled>播放日文原版</button>
+                    <button id="cache-resources" disabled>缓存完整资源</button>
+                    <button id="play-local" disabled>离线播放</button>
+                </div>
+                <div id="cache-progress" class="progress-block" hidden>
+                    <div class="progress-track"><span id="cache-progress-bar"></span></div>
+                    <p id="cache-progress-text">等待开始</p>
+                </div>
+                <div id="support-still-panel" class="support-still-panel" hidden>
+                    <div class="support-still-heading">
+                        <div>
+                            <strong>Support 卡静态演出图</strong>
+                            <p>自动优先检查本地文件，再尝试从资源站补取；远端尚未更新时可用页游截图代替。</p>
+                        </div>
+                        <span id="support-still-badge" class="badge">等待检查</span>
+                    </div>
+                    <div id="support-still-list" class="support-still-list"></div>
+                    <p class="support-still-note">本地截图会居中缩放为 1136×640 JPEG，并按演出引用的卡图 ID 留档。Produce 卡动态卡图不会被替换。</p>
+                </div>
+                <div id="card-movie-panel" class="support-still-panel" hidden>
+                    <div class="support-still-heading">
+                        <div>
+                            <strong>Produce 卡动态演出视频</strong>
+                            <p>在线播放失败时，可将同一卡图 ID 的 MP4 绑定到本地；其余剧情资源仍可继续在线读取。</p>
+                        </div>
+                        <span id="card-movie-badge" class="badge">等待检查</span>
+                    </div>
+                    <div id="card-movie-list" class="support-still-list"></div>
+                    <p class="support-still-note">目标文件为 <code>assets/movies/idols/card/&lt;卡图ID&gt;.mp4</code>，单个文件上限 120 MB。若轨道另有同 ID 音效，仍会按剧情中的 SE 路径单独读取。</p>
+                </div>
+                <div id="related-results" class="related-results" hidden>
+                    <div class="related-heading">
+                        <strong>关联剧情提取结果</strong>
+                        <span id="related-badge" class="badge">尚未检索</span>
+                    </div>
+                    <div id="related-list" class="related-list"></div>
+                </div>
+                <div class="workbench-divider"></div>
+                <div class="section-heading subsection-main-heading">
+                    <div>
+                        <h3 id="translation-title">翻译合成与编辑</h3>
+                        <p>导入 CSV 后会自动判断剧情分类、抓取对应日文原版并载入；批量导入会建立关联剧情列表并打开首篇。</p>
+                    </div>
+                    <span id="translation-badge" class="badge">未选择 CSV</span>
+                </div>
+
+                <section class="workflow-subsection" aria-labelledby="speaker-title">
+                    <div class="subsection-heading">
+                        <div>
+                            <h3 id="speaker-title">发言人译名</h3>
+                            <p>与 <code>speaker.csv</code> 对照，只列出当前剧情中尚未留档的日文名称。</p>
+                        </div>
+                        <span id="speaker-badge" class="badge">等待剧情</span>
+                    </div>
+                    <div id="speaker-empty" class="empty-state">载入剧情后会在这里列出缺失名称。</div>
+                    <div id="speaker-editor" class="speaker-editor" hidden></div>
+                    <div class="action-row">
+                        <button id="save-speakers" disabled>保存发言人译名</button>
+                        <span id="speaker-archive-path" class="path-note"></span>
+                    </div>
+                </section>
+
+                <div class="translation-import-grid">
+                    <label class="file-drop" for="translation-csv">
+                        <input id="translation-csv" type="file" accept=".csv,text/csv">
+                        <span class="file-title">导入单篇汉化 CSV 并直接载入</span>
+                        <span id="file-name" class="file-name">未选择文件</span>
+                    </label>
+                    <label class="file-drop" for="translation-batch">
+                        <input id="translation-batch" type="file" accept=".csv,text/csv" multiple>
+                        <span class="file-title">批量导入关联剧情 CSV 并载入首篇</span>
+                        <span class="file-name">逐份读取 id 列、自动判断分类并建立可切换的关联列表</span>
+                    </label>
+                </div>
+
+                <div id="translation-batch-report" class="report" hidden></div>
+                <div id="translation-report" class="report" hidden></div>
+                <div class="translation-related-switch">
+                    <label for="translation-related-select">
+                        <span>关联剧情</span>
+                        <select id="translation-related-select" disabled>
+                            <option value="">尚未检索关联剧情</option>
+                        </select>
+                    </label>
+                    <button id="translation-related" type="button">切换关联剧情</button>
+                </div>
+                <div class="action-row">
+                    <button id="build-translation" disabled>另存汉化 JSON</button>
+                    <button id="play-chinese" class="primary" disabled>保存 CSV 并播放汉化版</button>
+                    <button id="play-edit" disabled>编辑模式播放</button>
+                    <button id="export-video" class="primary" disabled hidden>OBS 直出 1080p60</button>
+                    <button id="export-video-browser" disabled hidden>兼容直出（浏览器）</button>
+                    <span class="video-export-frozen-note">视频直出暂时冻结，后续将作为独立功能继续研发</span>
+                </div>
+                <div class="obs-export-settings" hidden>
+                    <div class="obs-export-heading">
+                        <div>
+                            <strong>OBS 本地直出</strong>
+                            <p>密码只用于本次运行中的本机连接，不会写入工程或导出包。</p>
+                        </div>
+                        <span id="obs-export-status" class="badge">尚未检测</span>
+                    </div>
+                    <div class="obs-export-grid">
+                        <label>
+                            <span>WebSocket 端口</span>
+                            <input id="obs-port" type="number" min="1" max="65535" value="4455" inputmode="numeric">
+                        </label>
+                        <label>
+                            <span>WebSocket 密码</span>
+                            <input id="obs-password" type="password" autocomplete="off" placeholder="工具 → WebSocket 服务器设置">
+                        </label>
+                        <button id="obs-test" type="button">检测 OBS</button>
+                    </div>
+                    <p id="obs-export-note" class="obs-export-note">请先在 OBS 中禁用“桌面音频”和全部“麦克风/Aux”；OBS 只录画面，剧情混音由播放器独立采集后合并，不受桌面声音和蓝牙设备影响。</p>
+                </div>
+                <div id="video-export-report" class="progress-block video-export-report" hidden>
+                    <div class="progress-track"><span id="video-export-progress-bar"></span></div>
+                    <p id="video-export-progress-text">等待开始</p>
+                    <div class="video-export-actions">
+                        <button id="video-export-unlock" hidden>允许声音并开始</button>
+                        <button id="video-export-cancel" hidden>取消直出</button>
+                        <a id="video-export-download" class="button-link" hidden>打开／保存 MP4</a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- LOCAL_MONITOR_BEGIN -->
+        <section id="game-update-monitor" class="panel" aria-labelledby="game-update-title">
+            <div class="panel-body">
+                <div class="section-heading">
+                    <div>
+                        <h2 id="game-update-title">剧情资源库与更新日志</h2>
+                        <p>轻量监听剧情 JSON、卡名与单话标题；卡图和动态卡图不会后台下载，只在打开实际使用它们的剧情时向当前页游会话按需请求。</p>
+                    </div>
+                    <span id="game-update-badge" class="badge">尚未建立基线</span>
+                </div>
+                <div class="monitor-actions">
+                    <a class="button-link primary" href="./scripts/ShinyScenarioUpdateMonitor.user.js">安装／更新监听脚本</a>
+                    <a class="button-link" href="https://shinycolors.enza.fun/" target="_blank" rel="noreferrer">打开页游并检查</a>
+                    <button id="game-update-refresh">刷新列表</button>
+                    <button id="game-update-rebuild-labels">补全全库名称</button>
+                    <button id="game-update-acknowledge" disabled>全部标为已读</button>
+                </div>
+                <p id="game-update-note" class="monitor-note">安装脚本后打开一次页游，首次扫描只建立基线，不会把已有剧情全部报成更新。</p>
+                <div id="game-update-list" class="monitor-list">
+                    <div class="empty-state">等待页游监听脚本送来第一份资源清单。</div>
+                </div>
+            </div>
+        </section>
+        <!-- LOCAL_MONITOR_END -->
+
+        <footer>
+            <span id="global-status" role="status" aria-live="polite">本地应用已就绪。</span>
+        </footer>
+    </main>
+
+    <iframe id="video-export-frame" class="video-export-frame" title="后台视频渲染器" allow="autoplay" aria-hidden="true"></iframe>
+
+    <script src="./scripts/Constants.js"></script>
+    <script src="./scripts/SupportStillFallback.js"></script>
+    <script src="./scripts/CsvTranslation.js"></script>
+    <script src="./scripts/ScenarioStoryMetadata.js"></script>
+    <script src="./scripts/RelatedScenarioSearch.js"></script>
+    <script src="./app.js"></script>
+    <script src="./scripts/AppRelatedScenario.js"></script>
+    <!-- LOCAL_MONITOR_BEGIN -->
+    <script src="./scripts/GameUpdateMonitorCore.js"></script>
+    <script src="./scripts/GameUpdateMonitorApp.js"></script>
+    <!-- LOCAL_MONITOR_END -->
+</body>
+</html>
