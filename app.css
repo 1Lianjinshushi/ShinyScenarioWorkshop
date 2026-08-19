@@ -48,6 +48,29 @@ button, input, select { font: inherit; }
   margin-bottom: 30px;
 }
 
+.hero-tools {
+  flex: 0 0 min(300px, 35vw);
+  display: grid;
+  justify-items: stretch;
+  gap: 12px;
+}
+.translator-setting {
+  display: block;
+  padding: 13px 14px 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(255,255,255,.025);
+}
+.translator-setting input { min-height: 40px; }
+.translator-setting small {
+  display: block;
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.45;
+}
+.hero-tools .quiet-link { justify-self: end; }
+
 .eyebrow {
   margin: 0 0 10px;
   color: var(--pink-2);
@@ -558,6 +581,8 @@ footer { padding: 22px 6px 0; color: var(--muted); font-size: 13px; }
 @media (max-width: 760px) {
   .shell { width: min(100% - 22px, 1120px); padding-top: 28px; }
   .hero { align-items: flex-start; flex-direction: column; }
+  .hero-tools { width: 100%; }
+  .hero-tools .quiet-link { justify-self: start; }
   .scenario-id-import { align-items: flex-start; flex-direction: column; gap: 8px; }
   .scenario-id-import .file-name { max-width: 100%; text-align: left; }
   .panel { grid-template-columns: 1fr; }

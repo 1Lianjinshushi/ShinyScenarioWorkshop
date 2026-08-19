@@ -32,6 +32,28 @@ assert.ok(edited.startsWith('\uFEFF'));
 assert.equal(csv.parseScenarioCsv(edited)[0].trans, '新译文\\n第二行');
 assert.equal(csv.parseScenarioCsv(edited)[1].trans, '');
 
+const standardized = csv.ensureScenarioCsvMetadata(edited, 'produce_events', '201002001');
+assert.match(standardized, /\ninfo,produce_events\/201002001\.json,,\n/);
+assert.match(standardized, /\n译者,,,\n$/);
+const repairedMetadata = csv.ensureScenarioCsvMetadata(
+    'id,name,text,trans\n2010020010010,智代子,原文,译文\ninfo,wrong\/path.json,,\n译者,测试译者,,\n',
+    'produce_events',
+    '201002001',
+);
+assert.match(repairedMetadata, /info,produce_events\/201002001\.json,,/);
+assert.match(repairedMetadata, /译者,测试译者,,/);
+const signedMetadata = csv.ensureScenarioCsvMetadata(
+    repairedMetadata,
+    'produce_events',
+    '201002001',
+    '煉金術式',
+);
+assert.match(signedMetadata, /译者,煉金術式,,/);
+const signedBlank = csv.createEditableScenarioCsv([
+    { id: '2010020010010', speaker: '智代子', text: '原文' },
+], { eventType: 'produce_events', eventId: '201002001', translator: '煉金術式' });
+assert.match(signedBlank, /\n译者,煉金術式,,\n$/);
+
 const mergedForEdit = csv.mergeScenarioTranslation([
     { id: '0000000000000', speaker: '真乃', text: '一行目' },
     { id: '0000000000000', speaker: 'めぐる', text: '二行目' },

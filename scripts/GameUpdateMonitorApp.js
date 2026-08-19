@@ -161,6 +161,9 @@
                     eventIds,
                     groupLabel: node.label,
                     updateDetectedAt: (node.children || []).map(row => row.updateDetectedAt).find(Boolean) || '',
+                    translator: window.SSVWorkshopSettings
+                        ? window.SSVWorkshopSettings.translatorName()
+                        : '',
                 }),
             });
             if (!response.ok) {

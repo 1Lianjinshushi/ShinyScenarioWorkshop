@@ -82,7 +82,51 @@
             .replace(/\r\n|\r|\n/g, '\\n');
     }
 
-    function createEditableScenarioCsv(tracks) {
+    function scenarioJsonPath(eventType, eventId) {
+        const type = String(eventType || '').trim();
+        const id = String(eventId || '').trim();
+        if (!/^[a-z0-9_-]+$/i.test(type) || !/^\d{6,12}$/.test(id)) return '';
+        return `${type}/${id}.json`;
+    }
+
+    function ensureScenarioCsvMetadata(csvText, eventType, eventId, translator = '') {
+        const input = String(csvText || '');
+        const hasBom = input.startsWith('\uFEFF');
+        const rows = parseCsvRows(input.replace(/^\uFEFF/, ''));
+        const headerIndex = rows.findIndex((row) => {
+            const normalized = row.map(cell => String(cell || '').trim().toLowerCase());
+            return ['id', 'name', 'text', 'trans'].every(key => normalized.includes(key));
+        });
+        if (headerIndex < 0) throw new Error('CSV header id,name,text,trans was not found.');
+        const header = rows[headerIndex].map(cell => String(cell || '').trim().toLowerCase());
+        const indexes = Object.fromEntries(['id', 'name', 'text', 'trans'].map(key => [key, header.indexOf(key)]));
+        const jsonPath = scenarioJsonPath(eventType, eventId);
+        if (!jsonPath) throw new Error('A valid eventType/eventId is required for SC-VIEWER CSV metadata.');
+
+        let infoRow = rows.slice(headerIndex + 1).find(row => String(row[indexes.id] || '').trim().toLowerCase() === 'info');
+        if (!infoRow) {
+            infoRow = [];
+            infoRow[indexes.id] = 'info';
+            rows.push(infoRow);
+        }
+        while (infoRow.length < header.length) infoRow.push('');
+        infoRow[indexes.name] = jsonPath;
+        if (indexes.text >= 0 && infoRow[indexes.text] == null) infoRow[indexes.text] = '';
+        if (indexes.trans >= 0 && infoRow[indexes.trans] == null) infoRow[indexes.trans] = '';
+
+        let translatorRow = rows.slice(headerIndex + 1).find(row => String(row[indexes.id] || '').trim() === '译者');
+        if (!translatorRow) {
+            translatorRow = [];
+            translatorRow[indexes.id] = '译者';
+            rows.push(translatorRow);
+        }
+        while (translatorRow.length < header.length) translatorRow.push('');
+        const normalizedTranslator = String(translator || '').trim();
+        if (normalizedTranslator) translatorRow[indexes.name] = normalizedTranslator;
+        return `${hasBom ? '\uFEFF' : ''}${serializeCsvRows(rows)}`;
+    }
+
+    function createEditableScenarioCsv(tracks, metadata = {}) {
         if (!Array.isArray(tracks)) throw new Error('Scenario JSON must be an array.');
         const rows = [['id', 'name', 'text', 'trans']];
         tracks.forEach((track) => {
@@ -100,6 +144,11 @@
             const source = toStoredTranslation(track[field]);
             rows.push([id, name, source, '']);
         });
+        const jsonPath = scenarioJsonPath(metadata.eventType, metadata.eventId);
+        if (jsonPath) {
+            rows.push(['info', jsonPath, '', '']);
+            rows.push(['译者', String(metadata.translator || '').trim(), '', '']);
+        }
         return `\uFEFF${serializeCsvRows(rows)}`;
     }
 
@@ -346,6 +395,7 @@
         parseScenarioCsv,
         serializeCsvRows,
         toStoredTranslation,
+        ensureScenarioCsvMetadata,
         createEditableScenarioCsv,
         updateScenarioCsvTranslation,
         inferScenarioEventId,

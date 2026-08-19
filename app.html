@@ -15,7 +15,14 @@
                 <h1>闪耀色彩剧情工坊</h1>
                 <p class="lede">一个工作台完成剧情抓取、原版播放、翻译合成、实时编辑与演出资源修复；资源库集中提供完整目录和更新日志。</p>
             </div>
-            <a class="quiet-link" href="./">直接打开播放器</a>
+            <div class="hero-tools">
+                <label class="translator-setting" for="translator-name">
+                    <span>全局译者署名</span>
+                    <input id="translator-name" type="text" maxlength="80" autocomplete="off" placeholder="例如：煉金術式">
+                    <small id="translator-note">将自动写入【翻】和【校】CSV</small>
+                </label>
+                <a class="quiet-link" href="./">直接打开播放器</a>
+            </div>
         </header>
 
         <section class="panel fetch-panel" aria-labelledby="fetch-title">

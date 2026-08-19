@@ -30689,17 +30689,13 @@
       "eventType": "produce_events",
       "eventId": "301802402",
       "storyTitle": "on the stage",
-      "cardName": "【近づけば遠ざかる】黛冬優子",
-      "cardId": "2040180190",
-      "source": "shinycolors.moe"
+      "source": "sc-viewer.top/name"
     },
     "produce_events/301802401": {
       "eventType": "produce_events",
       "eventId": "301802401",
       "storyTitle": "off the stage",
-      "cardName": "【近づけば遠ざかる】黛冬優子",
-      "cardId": "2040180190",
-      "source": "shinycolors.moe"
+      "source": "sc-viewer.top/name"
     },
     "produce_events/301802302": {
       "eventType": "produce_events",
@@ -38067,25 +38063,19 @@
       "eventType": "produce_events",
       "eventId": "202701011",
       "storyTitle": "あたしは天使じゃないから",
-      "cardName": "【７日間の天使】鈴木羽那",
-      "cardId": "1040270060",
-      "source": "shinycolors.moe"
+      "source": "sc-viewer.top/name"
     },
     "produce_events/202701002": {
       "eventType": "produce_events",
       "eventId": "202701002",
       "storyTitle": "大事な人",
-      "cardName": "【７日間の天使】鈴木羽那",
-      "cardId": "1040270060",
-      "source": "shinycolors.moe"
+      "source": "sc-viewer.top/name"
     },
     "produce_events/202701001": {
       "eventType": "produce_events",
       "eventId": "202701001",
       "storyTitle": "人間界にやってきた天使",
-      "cardName": "【７日間の天使】鈴木羽那",
-      "cardId": "1040270060",
-      "source": "shinycolors.moe"
+      "source": "sc-viewer.top/name"
     },
     "produce_events/202700811": {
       "eventType": "produce_events",
@@ -48847,6 +48837,86 @@
       "storyTitle": "守ってくれるひと",
       "cardName": "【今夜からもまた】有栖川夏葉",
       "cardId": "2040130180",
+      "source": "shinycolors.moe"
+    },
+    "produce_events/300302901": {
+      "eventType": "produce_events",
+      "eventId": "300302901",
+      "storyTitle": "身近なようで",
+      "cardName": "【向こう側の君へ】八宮めぐる",
+      "cardId": "2030030150",
+      "source": "shinycolors.moe"
+    },
+    "produce_events/300302902": {
+      "eventType": "produce_events",
+      "eventId": "300302902",
+      "storyTitle": "浮かぶまま",
+      "cardName": "【向こう側の君へ】八宮めぐる",
+      "cardId": "2030030150",
+      "source": "shinycolors.moe"
+    },
+    "produce_events/300602801": {
+      "eventType": "produce_events",
+      "eventId": "300602801",
+      "storyTitle": "『良いこと』の予感",
+      "cardName": "【かっこよさの定義】白瀬咲耶",
+      "cardId": "2040060210",
+      "source": "shinycolors.moe"
+    },
+    "produce_events/300602802": {
+      "eventType": "produce_events",
+      "eventId": "300602802",
+      "storyTitle": "『かっこよく楽しむ』こと",
+      "cardName": "【かっこよさの定義】白瀬咲耶",
+      "cardId": "2040060210",
+      "source": "shinycolors.moe"
+    },
+    "produce_events/300602803": {
+      "eventType": "produce_events",
+      "eventId": "300602803",
+      "storyTitle": "『キミ』も絶対に",
+      "cardName": "【かっこよさの定義】白瀬咲耶",
+      "cardId": "2040060210",
+      "source": "shinycolors.moe"
+    },
+    "produce_events/202301501": {
+      "eventType": "produce_events",
+      "eventId": "202301501",
+      "storyTitle": "look!!",
+      "cardName": "【B!c,Cib】市川雛菜",
+      "cardId": "1040230110",
+      "source": "shinycolors.moe"
+    },
+    "produce_events/202301502": {
+      "eventType": "produce_events",
+      "eventId": "202301502",
+      "storyTitle": "Either !s fine",
+      "cardName": "【B!c,Cib】市川雛菜",
+      "cardId": "1040230110",
+      "source": "shinycolors.moe"
+    },
+    "produce_events/202301503": {
+      "eventType": "produce_events",
+      "eventId": "202301503",
+      "storyTitle": "How to enjoy",
+      "cardName": "【B!c,Cib】市川雛菜",
+      "cardId": "1040230110",
+      "source": "shinycolors.moe"
+    },
+    "produce_events/202301504": {
+      "eventType": "produce_events",
+      "eventId": "202301504",
+      "storyTitle": "Beautiful is...",
+      "cardName": "【B!c,Cib】市川雛菜",
+      "cardId": "1040230110",
+      "source": "shinycolors.moe"
+    },
+    "produce_events/202301511": {
+      "eventType": "produce_events",
+      "eventId": "202301511",
+      "storyTitle": "Cute is...",
+      "cardName": "【B!c,Cib】市川雛菜",
+      "cardId": "1040230110",
       "source": "shinycolors.moe"
     }
   }

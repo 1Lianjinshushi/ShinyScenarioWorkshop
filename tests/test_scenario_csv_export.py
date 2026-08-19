@@ -157,6 +157,26 @@ class ScenarioCsvExportTests(unittest.TestCase):
             {"id": "select", "name": "", "text": "その意気だ！", "trans": ""},
         ])
 
+    def test_tracks_to_csv_can_emit_sc_viewer_footer_metadata(self) -> None:
+        value = SERVER.tracks_to_csv([
+            {"id": "2010020010010", "speaker": "智代子", "text": "原文"},
+        ], "produce_events", "201002001")
+        rows = list(csv.reader(io.StringIO(value)))
+        self.assertEqual(rows[-2], ["info", "produce_events/201002001.json", "", ""])
+        self.assertEqual(rows[-1], ["译者", "", "", ""])
+        repaired = SERVER.ensure_scenario_csv_metadata(
+            "id,name,text,trans\n2010020010010,智代子,原文,译文\ninfo,wrong/path.json,,\n译者,测试译者,,\n",
+            "produce_events", "201002001",
+        )
+        repaired_rows = list(csv.reader(io.StringIO(repaired)))
+        self.assertEqual(repaired_rows[-2], ["info", "produce_events/201002001.json", "", ""])
+        self.assertEqual(repaired_rows[-1], ["译者", "测试译者", "", ""])
+        signed = SERVER.ensure_scenario_csv_metadata(
+            repaired, "produce_events", "201002001", "煉金術式"
+        )
+        signed_rows = list(csv.reader(io.StringIO(signed.lstrip("\ufeff"))))
+        self.assertEqual(signed_rows[-1], ["译者", "煉金術式", "", ""])
+
     def test_group_zip_uses_story_titles(self) -> None:
         titles = {"201002001": "夏のチョコアイドル", "201002011": "なんて　アイドル"}
         with patch.object(SERVER, "fetch_scenario_tracks", side_effect=lambda event_type, event_id: [
@@ -170,12 +190,17 @@ class ScenarioCsvExportTests(unittest.TestCase):
             content, filename, count = SERVER.export_scenario_group({
                 "eventType": "produce_events",
                 "eventIds": ["201002011", "201002001"],
+                "translator": "煉金術式",
             })
         self.assertEqual(filename, "智代子P卡・【Candyならいらない】.zip")
         self.assertEqual(count, 2)
         with zipfile.ZipFile(io.BytesIO(content)) as bundle:
             self.assertEqual(bundle.namelist(), ["01.夏のチョコアイドル.csv", "TE.なんて　アイドル.csv"])
             self.assertTrue(bundle.read(bundle.namelist()[0]).startswith(b"\xef\xbb\xbf"))
+            first_rows = list(csv.reader(io.StringIO(
+                bundle.read(bundle.namelist()[0]).decode("utf-8-sig")
+            )))
+            self.assertEqual(first_rows[-1], ["译者", "煉金術式", "", ""])
 
     def test_activity_unit_inference_ignores_non_idol_speakers(self) -> None:
         self.assertEqual(SERVER.activity_unit_label([
