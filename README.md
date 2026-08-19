@@ -110,6 +110,15 @@ special_communications__123456789.csv
 
 批量导入会先验证 `id,name,text,trans` 表头和 CSV 可解析性；当文件名也含有编号时，还会校验它是否与 `id` 列推断结果一致，再逐份留档。播放器在 `language=cn` 模式下会直接读取这些 CSV，不要求提前生成汉化 JSON。
 
+工坊新建、自动保存和导出的 CSV 会保留旧翻译工具使用的两个尾行：
+
+```text
+info,<eventType>/<eventId>.json,,
+译者,,,
+```
+
+其中 `info` 行是 `sc-viewer.top` 反查原始剧情 JSON 的依据，并不是对白轨道。导入缺少该行的旧工坊 CSV 后，编辑模式保存时会自动补齐。工坊顶部的“全局译者署名”会在本地记忆，并写入【翻】、【校】及整组 ZIP 内每份 CSV 的 `译者` 行；留空时则保留导入文件原署名。
+
 ## 文件位置
 
 - 日文 JSON 留档：`exports/japanese/<eventType>/<eventId>.json`

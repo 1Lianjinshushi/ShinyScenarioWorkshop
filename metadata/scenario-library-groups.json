@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-08-16T05:39:31+00:00",
+  "generatedAt": "2026-08-19T08:27:57+00:00",
   "cards": {
     "3004027": {
       "cardName": "【食堂のリトルアイドル】",
@@ -11881,6 +11881,36 @@
       "cardId": "2040130180",
       "label": "夏叶S卡・【今夜からもまた】",
       "source": "shinycolors.moe/card-event-id"
+    },
+    "3003029": {
+      "cardName": "【向こう側の君へ】",
+      "rawCardName": "【向こう側の君へ】八宮めぐる",
+      "characterId": "003",
+      "characterName": "巡",
+      "cardType": "Support",
+      "cardId": "2030030150",
+      "label": "巡S卡・【向こう側の君へ】",
+      "source": "shinycolors.moe/card-event-id"
+    },
+    "3006028": {
+      "cardName": "【かっこよさの定義】",
+      "rawCardName": "【かっこよさの定義】白瀬咲耶",
+      "characterId": "006",
+      "characterName": "咲耶",
+      "cardType": "Support",
+      "cardId": "2040060210",
+      "label": "咲耶S卡・【かっこよさの定義】",
+      "source": "shinycolors.moe/card-event-id"
+    },
+    "2023015": {
+      "cardName": "【B!c,Cib】",
+      "rawCardName": "【B!c,Cib】市川雛菜",
+      "characterId": "023",
+      "characterName": "雏菜",
+      "cardType": "Produce",
+      "cardId": "1040230110",
+      "label": "雏菜P卡・【B!c,Cib】",
+      "source": "scenario-event-metadata"
     }
   },
   "activities": {
@@ -12365,9 +12395,11 @@
       "source": "scenario-speaker-scan"
     }
   },
-  "errors": [],
+  "errors": [
+    "仍有 3 张卡尚无资料站卡名：2023015, 3003029, 3006028"
+  ],
   "stats": {
-    "knownCardGroups": 1081,
+    "knownCardGroups": 1084,
     "namedCardGroups": 1081,
     "knownActivityGroups": 96,
     "namedActivityGroups": 96

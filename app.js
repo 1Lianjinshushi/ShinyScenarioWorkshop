@@ -4,6 +4,7 @@ const REMOTE_ROOT = 'https://service.sc-viewer.top/custom';
 const REMOTE_JSON_FALLBACK = 'https://service.sc-viewer.top/convert/cache/json';
 const PRESERVED_ASSET_VALUES = new Set(['', 'on', 'off', 'pause', 'resume', 'fade_out']);
 const VIDEO_EXPORT_FROZEN = true;
+const TRANSLATOR_STORAGE_KEY = 'ssv-workshop-translator';
 
 const state = {
     eventType: 'produce_events',
@@ -46,7 +47,58 @@ const ui = Object.fromEntries([
     'obs-port', 'obs-password', 'obs-test', 'obs-export-status', 'obs-export-note',
     'support-still-panel', 'support-still-badge', 'support-still-list',
     'card-movie-panel', 'card-movie-badge', 'card-movie-list',
+    'translator-name', 'translator-note',
 ].map(id => [id, document.getElementById(id)]));
+
+function currentTranslatorName() {
+    return String(ui['translator-name'] && ui['translator-name'].value || '').trim();
+}
+
+function normalizeTranslationCsv(content, eventType, eventId) {
+    return ScenarioCsvTranslation.ensureScenarioCsvMetadata(
+        String(content || ''),
+        eventType,
+        eventId,
+        currentTranslatorName(),
+    );
+}
+
+function initializeTranslatorSetting() {
+    if (!ui['translator-name']) return;
+    try {
+        ui['translator-name'].value = localStorage.getItem(TRANSLATOR_STORAGE_KEY) || '';
+    } catch (_) {
+        // Storage can be unavailable in private browsing. The current-session
+        // input still remains usable in that case.
+    }
+    const update = () => {
+        const translator = currentTranslatorName();
+        try {
+            if (translator) localStorage.setItem(TRANSLATOR_STORAGE_KEY, translator);
+            else localStorage.removeItem(TRANSLATOR_STORAGE_KEY);
+        } catch (_) {}
+        if (state.csvText && state.csvEventType && state.csvEventId) {
+            try {
+                state.csvText = normalizeTranslationCsv(
+                    state.csvText,
+                    state.csvEventType,
+                    state.csvEventId,
+                );
+            } catch (_) {}
+        }
+        if (ui['translator-note']) {
+            ui['translator-note'].textContent = translator
+                ? `已记住“${translator}”，导出时自动写入译者行`
+                : '将自动写入【翻】和【校】CSV；留空时保留文件原署名';
+        }
+    };
+    ui['translator-name'].addEventListener('input', update);
+    update();
+    window.SSVWorkshopSettings = Object.freeze({
+        translatorName: currentTranslatorName,
+        translatorStorageKey: TRANSLATOR_STORAGE_KEY,
+    });
+}
 
 function setGlobalStatus(message, tone = '') {
     ui['global-status'].textContent = message;
@@ -927,10 +979,11 @@ async function handleCsvSelection(event) {
     const file = event.target.files && event.target.files[0];
     if (!file) return;
     try {
-        const text = await file.text();
-        const rows = ScenarioCsvTranslation.parseScenarioCsv(text);
+        const importedText = await file.text();
+        const rows = ScenarioCsvTranslation.parseScenarioCsv(importedText);
         const eventId = ScenarioCsvTranslation.inferScenarioEventId(rows);
         const eventType = await resolveScenarioEventType(file.name, eventId, ui['event-type'].value.trim());
+        const text = normalizeTranslationCsv(importedText, eventType, eventId);
         const translated = translatedRowCount(rows);
         const workflow = translated > 0 ? 'correction' : 'translation';
         state.csvWorkflowByScenario.set(`${eventType}/${eventId}`, workflow);
@@ -1000,12 +1053,13 @@ async function batchCsvTarget(fileName, fallbackEventType, inferredEventId) {
 
 function setCurrentTranslationCsv(eventType, eventId, fileName, text, archived = true, workflow = '') {
     if (!state.tracks || state.eventType !== eventType || state.eventId !== eventId) return false;
-    state.csvText = text;
+    const normalizedText = normalizeTranslationCsv(text, eventType, eventId);
+    state.csvText = normalizedText;
     state.csvName = fileName;
     state.csvEventType = eventType;
     state.csvEventId = eventId;
     state.translationAvailable = archived;
-    const rows = ScenarioCsvTranslation.parseScenarioCsv(text);
+    const rows = ScenarioCsvTranslation.parseScenarioCsv(normalizedText);
     const translated = translatedRowCount(rows);
     const normalizedWorkflow = workflow === 'correction' || workflow === 'translation'
         ? workflow
@@ -1036,8 +1090,8 @@ async function handleBatchCsvSelection(event) {
     try {
         for (const file of files) {
             try {
-                const text = await file.text();
-                const rows = ScenarioCsvTranslation.parseScenarioCsv(text);
+                const importedText = await file.text();
+                const rows = ScenarioCsvTranslation.parseScenarioCsv(importedText);
                 let inferredEventId = '';
                 try {
                     inferredEventId = ScenarioCsvTranslation.inferScenarioEventId(rows);
@@ -1046,6 +1100,7 @@ async function handleBatchCsvSelection(event) {
                     if (!/^([A-Za-z0-9_-]+__)?[A-Za-z0-9_-]+$/.test(base)) throw error;
                 }
                 const target = await batchCsvTarget(file.name, fallbackEventType, inferredEventId);
+                const text = normalizeTranslationCsv(importedText, target.eventType, target.eventId);
                 const key = `${target.eventType}/${target.eventId}`;
                 if (usedTargets.has(key)) throw new Error(`批次中剧情编号重复：${key}`);
                 usedTargets.add(key);
@@ -1056,6 +1111,7 @@ async function handleBatchCsvSelection(event) {
                     eventType: target.eventType,
                     eventId: target.eventId,
                     content: text,
+                    translator: currentTranslatorName(),
                 });
                 successes.push({
                     fileName: file.name,
@@ -1153,12 +1209,17 @@ async function ensureEditableTranslationCsv() {
         && state.csvEventId === state.eventId;
     if (matchesCurrent) return saveTranslationForPlayback();
 
-    const content = ScenarioCsvTranslation.createEditableScenarioCsv(state.tracks);
+    const content = ScenarioCsvTranslation.createEditableScenarioCsv(state.tracks, {
+        eventType: state.eventType,
+        eventId: state.eventId,
+        translator: currentTranslatorName(),
+    });
     const merged = ScenarioCsvTranslation.mergeScenarioTranslation(state.tracks, content);
     const result = await apiPost('./api/save-translation', {
         eventType: state.eventType,
         eventId: state.eventId,
         content,
+        translator: currentTranslatorName(),
     });
     setCurrentTranslationCsv(state.eventType, state.eventId, `${state.eventId}.csv`, content, true, 'translation');
     setGlobalStatus(`已为 ${state.eventId} 建立空白编辑稿，可直接结合画面开始翻译。`, 'good');
@@ -1172,6 +1233,7 @@ async function buildTranslatedJson() {
         || state.csvEventId !== state.eventId) return;
     ui['build-translation'].disabled = true;
     try {
+        state.csvText = normalizeTranslationCsv(state.csvText, state.eventType, state.eventId);
         const merged = ScenarioCsvTranslation.mergeScenarioTranslation(state.tracks, state.csvText);
         let speakerChanges = 0;
         const localized = merged.tracks.map((track) => {
@@ -1209,6 +1271,7 @@ async function buildTranslatedJson() {
                 eventType: state.eventType,
                 eventId: state.eventId,
                 content: state.csvText,
+                translator: currentTranslatorName(),
             }),
         ]);
 
@@ -1232,11 +1295,13 @@ async function saveTranslationForPlayback() {
         || state.csvEventId !== state.eventId) {
         throw new Error('当前 CSV 与已载入剧情编号不一致，请重新选择或抓取对应剧情。');
     }
+    state.csvText = normalizeTranslationCsv(state.csvText, state.eventType, state.eventId);
     const merged = ScenarioCsvTranslation.mergeScenarioTranslation(state.tracks, state.csvText);
     const result = await apiPost('./api/save-translation', {
         eventType: state.eventType,
         eventId: state.eventId,
         content: state.csvText,
+        translator: currentTranslatorName(),
     });
     state.translationAvailable = true;
     setBadge(
@@ -1679,5 +1744,6 @@ window.addEventListener('message', (event) => {
 
 window.addEventListener('ssv-related-manifest-updated', refreshTranslationRelatedOptions);
 
+initializeTranslatorSetting();
 loadAppState();
 refreshTranslationRelatedOptions();

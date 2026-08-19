@@ -1965,7 +1965,63 @@ def fetch_scenario_tracks(event_type: str, event_id: str) -> list[object]:
     raise ValueError("剧情抓取失败：" + " | ".join(errors))
 
 
-def tracks_to_csv(tracks: list[object]) -> str:
+def normalize_translator_name(value: object) -> str:
+    translator = str(value or "").strip()
+    if len(translator) > 80:
+        raise ValueError("translator must be 80 characters or fewer")
+    return translator
+
+
+def ensure_scenario_csv_metadata(
+    content: str, event_type: str, event_id: str, translator: str = ""
+) -> str:
+    """Add/update the two footer rows used by the legacy translation tools.
+
+    SC-VIEWER resolves the original scenario JSON from the ``info`` row rather
+    than from the dialogue IDs.  Keep the translator row as a separate footer
+    so files can still be imported into the original page-game translation
+    workflow.
+    """
+    has_bom = content.startswith("\ufeff")
+    source = content.lstrip("\ufeff")
+    rows = list(csv.reader(io.StringIO(source, newline="")))
+    if not rows or not {"id", "name", "text", "trans"}.issubset(
+        {str(cell).strip().lower() for cell in rows[0]}
+    ):
+        raise ValueError("CSV header id,name,text,trans was not found")
+    header = [str(cell).strip().lower() for cell in rows[0]]
+    indexes = {key: header.index(key) for key in ("id", "name", "text", "trans")}
+    json_path = f"{event_type}/{event_id}.json"
+    info_row = next(
+        (row for row in rows[1:] if len(row) > indexes["id"] and str(row[indexes["id"]]).strip().lower() == "info"),
+        None,
+    )
+    if info_row is None:
+        info_row = []
+        rows.append(info_row)
+    while len(info_row) < len(header):
+        info_row.append("")
+    info_row[indexes["id"]] = "info"
+    info_row[indexes["name"]] = json_path
+    translator_row = next(
+        (row for row in rows[1:] if len(row) > indexes["id"] and str(row[indexes["id"]]).strip() == "译者"),
+        None,
+    )
+    if translator_row is None:
+        translator_row = [""] * len(header)
+        translator_row[indexes["id"]] = "译者"
+        rows.append(translator_row)
+    normalized_translator = normalize_translator_name(translator)
+    if normalized_translator:
+        translator_row[indexes["name"]] = normalized_translator
+    output = io.StringIO(newline="")
+    csv.writer(output, lineterminator="\n").writerows(rows)
+    return ("\ufeff" if has_bom else "") + output.getvalue()
+
+
+def tracks_to_csv(
+    tracks: list[object], event_type: str = "", event_id: str = "", translator: str = ""
+) -> str:
     output = io.StringIO(newline="")
     writer = csv.writer(output, lineterminator="\n")
     writer.writerow(["id", "name", "text", "trans"])
@@ -1979,6 +2035,9 @@ def tracks_to_csv(tracks: list[object]) -> str:
         speaker = "" if field == "select" else str(track.get("speaker") or "")
         source = str(track.get(field) or "").replace("\\n", "\n").replace("\r\n", "\n").replace("\r", "\n")
         writer.writerow([identifier, speaker, source.replace("\n", "\\n"), ""])
+    if event_type and event_id:
+        writer.writerow(["info", f"{event_type}/{event_id}.json", "", ""])
+        writer.writerow(["译者", normalize_translator_name(translator), "", ""])
     return output.getvalue()
 
 
@@ -2091,6 +2150,7 @@ def export_scenario_group(payload: dict[str, object]) -> tuple[bytes, str, int]:
     if not isinstance(raw_ids, list):
         raise ValueError("eventIds must be an array")
     event_ids = list(dict.fromkeys(validate_key(value, "eventId") for value in raw_ids))
+    translator = normalize_translator_name(payload.get("translator"))
     if not event_ids or len(event_ids) > 160:
         raise ValueError("整组导出必须包含 1 到 160 个剧情编号")
     signatures = {scenario_group_signature(event_type, value) for value in event_ids}
@@ -2122,7 +2182,10 @@ def export_scenario_group(payload: dict[str, object]) -> tuple[bytes, str, int]:
             if filename in used_names:
                 filename = f"{event_id}.{filename}"
             used_names.add(filename)
-            bundle.writestr(filename, tracks_to_csv(tracks).encode("utf-8-sig"))
+            bundle.writestr(
+                filename,
+                tracks_to_csv(tracks, event_type, event_id, translator).encode("utf-8-sig"),
+            )
     archive_stem = group_archive_stem(event_type, ordered_ids, tracks_by_id, metadata_by_id, payload)
     return archive.getvalue(), f"{safe_filename_part(archive_stem, 'scenario-group')}.zip", len(event_ids)
 
@@ -2630,6 +2693,9 @@ class ViewerRequestHandler(SimpleHTTPRequestHandler):
                 content = payload.get("content")
                 if not isinstance(content, str):
                     raise ValueError("content must be a string")
+                content = ensure_scenario_csv_metadata(
+                    content, event_type, event_id, normalize_translator_name(payload.get("translator"))
+                )
                 destination = TRANSLATION_ROOT / event_type / f"{event_id}.csv"
                 atomic_write_text(destination, content)
                 self._send_json({

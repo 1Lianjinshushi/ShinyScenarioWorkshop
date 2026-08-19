@@ -666,7 +666,49 @@ function Get-RemoteScenarioTracks([string]$EventType, [string]$EventId) {
     throw "剧情抓取失败：$($errors -join ' | ')"
 }
 
-function Convert-TracksToCsv([object[]]$Tracks) {
+function Get-TranslatorName([object]$Value) {
+    $name = ([string]$Value).Trim()
+    if ($name.Length -gt 80) { throw 'translator must be 80 characters or fewer' }
+    return $name
+}
+
+function Add-ScenarioCsvMetadata([string]$Content, [string]$EventType, [string]$EventId, [string]$Translator = '') {
+    if ($Content -notmatch '(?im)^\ufeff?id\s*,\s*name\s*,\s*text\s*,\s*trans\s*$') {
+        throw 'CSV header id,name,text,trans was not found'
+    }
+    $source = $Content.Replace("`r`n", "`n").Replace("`r", "`n")
+    $lines = @($source -split "`n")
+    $result = New-Object Collections.Generic.List[string]
+    $infoAdded = $false
+    $translatorSeen = $false
+    $translatorName = Get-TranslatorName $Translator
+    foreach ($line in $lines) {
+        if ($line -match '^(?:"?info"?),') {
+            if (-not $infoAdded) {
+                $result.Add("info,$EventType/$EventId.json,,")
+                $infoAdded = $true
+            }
+            continue
+        }
+        if ($line -match '^(?:"?译者"?),') {
+            if (-not $infoAdded) {
+                $result.Add("info,$EventType/$EventId.json,,")
+                $infoAdded = $true
+            }
+            $translatorSeen = $true
+            if ($translatorName) { $result.Add("译者,$(Escape-CsvCell $translatorName),,") }
+            else { $result.Add($line) }
+            continue
+        }
+        $result.Add($line)
+    }
+    while ($result.Count -gt 0 -and $result[$result.Count - 1] -eq '') { $result.RemoveAt($result.Count - 1) }
+    if (-not $infoAdded) { $result.Add("info,$EventType/$EventId.json,,") }
+    if (-not $translatorSeen) { $result.Add("译者,$(Escape-CsvCell $translatorName),,") }
+    return ($result -join "`n") + "`n"
+}
+
+function Convert-TracksToCsv([object[]]$Tracks, [string]$EventType = '', [string]$EventId = '', [string]$Translator = '') {
     $lines = New-Object Collections.Generic.List[string]
     $lines.Add('id,name,text,trans')
     foreach ($track in $Tracks) {
@@ -679,6 +721,10 @@ function Convert-TracksToCsv([object[]]$Tracks) {
         $source = [string]$(if ($hasText) { $track.text } else { $track.select })
         $source = $source.Replace("`r`n", "`n").Replace("`r", "`n").Replace("`n", '\n')
         $lines.Add("$(Escape-CsvCell $identifier),$(Escape-CsvCell $speaker),$(Escape-CsvCell $source),")
+    }
+    if ($EventType -and $EventId) {
+        $lines.Add("info,$EventType/$EventId.json,,")
+        $lines.Add("译者,$(Escape-CsvCell (Get-TranslatorName $Translator)),,")
     }
     return ($lines -join "`n") + "`n"
 }
@@ -723,6 +769,7 @@ function Get-SpecialStorySpeaker([object[]]$Tracks) {
 
 function New-ScenarioGroupArchive([object]$Payload) {
     $eventType = Test-SafeKey $Payload.eventType 'eventType'
+    $translator = Get-TranslatorName $Payload.translator
     $ids = New-Object Collections.Generic.List[string]
     foreach ($raw in @($Payload.eventIds)) {
         $id = Test-SafeKey $raw 'eventId'
@@ -751,7 +798,7 @@ function New-ScenarioGroupArchive([object]$Payload) {
             $used[$filename] = $true
             $entry = $zip.CreateEntry($filename, [IO.Compression.CompressionLevel]::Optimal)
             $writer = New-Object IO.StreamWriter($entry.Open(), (New-Object Text.UTF8Encoding($true)))
-            try { $writer.Write((Convert-TracksToCsv $tracks)) } finally { $writer.Dispose() }
+            try { $writer.Write((Convert-TracksToCsv $tracks $eventType $id $translator)) } finally { $writer.Dispose() }
         }
     } finally {
         $zip.Dispose()
@@ -1210,7 +1257,7 @@ function Handle-ApiRequest([IO.Stream]$Stream, [object]$Request) {
         $eventType = Test-SafeKey $payload.eventType 'eventType'
         $eventId = Test-SafeKey $payload.eventId 'eventId'
         if ($null -eq $payload.content) { throw 'content must be a string' }
-        $content = [string]$payload.content
+        $content = Add-ScenarioCsvMetadata ([string]$payload.content) $eventType $eventId (Get-TranslatorName $payload.translator)
         $destination = Join-Path (Join-Path $TranslationRoot $eventType) "$eventId.csv"
         Write-AtomicText $destination $content
         Write-JsonResponse $Stream ([PSCustomObject]@{

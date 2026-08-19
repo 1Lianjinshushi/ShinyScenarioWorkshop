@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+- Restored the legacy `info,<eventType>/<eventId>.json,,` and `译者` CSV footer rows so Workshop exports can be imported by SC-VIEWER and the original page-game translation workflow.
+- Kept log portraits bound to the original Japanese speaker name after Chinese speaker-name localisation.
+- Added the small circular portraits for all 28 regular idols, four collaboration characters, Hazuki, the president, and the anonymous fallback to the local/portable runtime set.
+- Added a remembered Workshop-wide translator signature; single-story, edited and group-ZIP CSV exports now write it into the legacy `译者` footer row.
+
 ## 20260816-r9
 
 - Separated scenario discovery dates from later metadata and resource implementation.

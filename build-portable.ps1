@@ -115,7 +115,7 @@ For a short illustrated Chinese guide and the version maintenance log, open Quic
 
 No Python installation is required. This launcher uses Windows PowerShell included with Windows 10/11.
 The player foundation is self-contained: the required fonts, common UI atlases,
-dialogue/select frames, interaction sounds, and tap effects are included.
+dialogue/select frames, log portraits, interaction sounds, and tap effects are included.
 Fetching a scenario still requires an Internet connection because story-specific
 backgrounds, characters, voices, music, card art, movies, and Spine data are loaded on demand.
 Downloaded resources and generated files stay inside this folder.

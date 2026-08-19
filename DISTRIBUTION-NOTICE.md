@@ -16,7 +16,9 @@ The upstream player foundation and this fork's additions are identified in
 
 The portable archive contains a small fixed runtime set needed to render the
 player consistently on a new Windows computer: two font files, common UI
-atlases, dialogue/select frames, four interaction sounds, and tap-effect data.
+atlases, dialogue/select frames, the small circular log portraits for the
+regular idols/collaboration characters/Hazuki/president, four interaction
+sounds, and tap-effect data.
 The exact list is recorded in `portable-runtime-assets.json`.
 
 It intentionally does not include scenario JSON, story-specific voices, music,

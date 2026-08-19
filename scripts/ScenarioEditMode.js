@@ -90,7 +90,17 @@
         constructor(options) {
             this._eventType = options.eventType;
             this._eventId = options.eventId;
-            this._csvText = String(options.csvText || '');
+            try {
+                this._translator = String(localStorage.getItem('ssv-workshop-translator') || '').trim();
+            } catch (_) {
+                this._translator = '';
+            }
+            this._csvText = ScenarioCsvTranslation.ensureScenarioCsvMetadata(
+                String(options.csvText || ''),
+                options.eventType,
+                options.eventId,
+                this._translator,
+            );
             this._exportWorkflow = options.exportWorkflow === 'correction'
                 ? 'correction'
                 : 'translation';
@@ -381,6 +391,21 @@
 
         async save() {
             clearTimeout(this._saveTimer);
+            let latestTranslator = this._translator;
+            try {
+                latestTranslator = String(localStorage.getItem('ssv-workshop-translator') || '').trim();
+            } catch (_) {}
+            const signedCsv = ScenarioCsvTranslation.ensureScenarioCsvMetadata(
+                this._csvText,
+                this._eventType,
+                this._eventId,
+                latestTranslator,
+            );
+            if (signedCsv !== this._csvText) {
+                this._translator = latestTranslator;
+                this._csvText = signedCsv;
+                this._dirty = true;
+            }
             if (this._saving) {
                 await this._saving;
                 if (this._dirty) return this.save();
@@ -398,6 +423,7 @@
                     eventType: this._eventType,
                     eventId: this._eventId,
                     content: snapshot,
+                    translator: this._translator,
                 }),
             }).then(async response => {
                 const body = await response.json().catch(() => ({}));

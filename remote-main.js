@@ -5,6 +5,12 @@
 const SSV_LOCAL_ASSET_ROOT = './assets';
 const SSV_REMOTE_ASSET_ROOT = 'https://service.sc-viewer.top/custom';
 const SSV_PORTABLE_RUNTIME_MANIFEST = './portable-runtime-assets.json';
+const SSV_TRANSLATOR_STORAGE_KEY = 'ssv-workshop-translator';
+
+function ssvTranslatorName() {
+    try { return String(localStorage.getItem(SSV_TRANSLATOR_STORAGE_KEY) || '').trim(); }
+    catch (_) { return ''; }
+}
 
 function ssvSetBootStatus(message, error = false) {
     let status = document.getElementById('ssv-player-boot-status');
@@ -90,7 +96,10 @@ function ssvCharacterAssetFormats(root) {
     return {
         spine:        ssvJoinUrl(root, 'spine/${type}/${category}/${id}/data.json'),
         still:        ssvJoinUrl(root, 'images/content/${type}/card/${id}.jpg'),
-        speakerIcon:  ssvJoinUrl(root, 'images/content/${type}/icon_circle_l/${id}.png'),
+        // Speaker portraits are a tiny, stable runtime set.  Keep them local so
+        // translated speaker names and a temporarily unavailable CDN cannot
+        // turn every log portrait into the anonymous silhouette.
+        speakerIcon:  ssvJoinUrl(SSV_LOCAL_ASSET_ROOT, 'images/content/${type}/icon_circle_l/${id}.png'),
         logTextFrame: ssvJoinUrl(SSV_LOCAL_ASSET_ROOT, 'images/event/log_text_frame/${id}.png'),
     };
 }
@@ -329,11 +338,15 @@ async function startScenarioPlayer(eventType, eventId, language) {
         }
         if (editMode && translationCsvText == null) {
             try {
-                const content = ScenarioCsvTranslation.createEditableScenarioCsv(source.tracks);
+                const content = ScenarioCsvTranslation.createEditableScenarioCsv(source.tracks, {
+                    eventType,
+                    eventId,
+                    translator: ssvTranslatorName(),
+                });
                 const response = await fetch('./api/save-translation', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ eventType, eventId, content }),
+                    body: JSON.stringify({ eventType, eventId, content, translator: ssvTranslatorName() }),
                 });
                 const body = await response.json().catch(() => ({}));
                 if (!response.ok) throw new Error(body.error || `HTTP ${response.status}`);

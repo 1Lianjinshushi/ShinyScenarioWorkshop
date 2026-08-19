@@ -47,7 +47,10 @@ class AdvResourceConverter {
 
             // speakerIcon  ← speaker name lookup
             if (e.speaker) {
-                e.speakerIcon = this._getSpeakerIconPath(e.speaker);
+                // CSV localisation changes the visible speaker name before
+                // resource conversion.  The original Japanese name is kept in
+                // speaker_ja specifically so icon lookup remains stable.
+                e.speakerIcon = this._getSpeakerIconPath(e.speaker_ja || e.speaker);
             }
 
             // logTextFrame  ← raw textFrame id ONLY (no inter-track propagation here)
