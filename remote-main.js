@@ -129,11 +129,21 @@ async function ssvLoadScenarioSource(eventType, eventId, mode) {
         `https://service.sc-viewer.top/convert/cache/json/${eventType}/${eventId}.json`,
     ];
     const candidates = [];
-    if (mode !== 'remote') {
-        candidates.push({ kind: 'local', assetRoot: SSV_LOCAL_ASSET_ROOT, url: localUrl });
+    if (mode === 'local') {
+        candidates.push({ kind: 'local', assetRoot: SSV_LOCAL_ASSET_ROOT, url: localUrl, preferLocalAssets: false });
+    } else if (mode !== 'remote') {
+        // Hybrid/auto mode reads the cached JSON first, while keeping remote
+        // resource keys. Individual assets are then mapped to local files
+        // where available, with remote fallback for only the missing items.
+        candidates.push({ kind: 'local-cache', assetRoot: SSV_REMOTE_ASSET_ROOT, url: localUrl, preferLocalAssets: true });
     }
     if (mode !== 'local') {
-        remoteUrls.forEach(url => candidates.push({ kind: 'remote', assetRoot: SSV_REMOTE_ASSET_ROOT, url }));
+        remoteUrls.forEach(url => candidates.push({
+            kind: mode === 'hybrid' ? 'hybrid' : 'remote',
+            assetRoot: SSV_REMOTE_ASSET_ROOT,
+            url,
+            preferLocalAssets: true,
+        }));
     }
 
     const errors = [];
@@ -149,7 +159,56 @@ async function ssvLoadScenarioSource(eventType, eventId, mode) {
 }
 
 function ssvAddResource(loader, key, url) {
-    if (!loader.resources[key]) loader.add(key, url, { crossOrigin: 'anonymous' });
+    if (!loader.resources[key]) loader.add(key, url, { crossOrigin: 'anonymous', timeout: 20000 });
+}
+
+function ssvRemoteResourcePath(url) {
+    try {
+        const target = new URL(url, window.location.href);
+        const root = new URL(`${SSV_REMOTE_ASSET_ROOT.replace(/\/+$/, '')}/`);
+        if (target.origin !== root.origin || !target.pathname.startsWith(root.pathname)) return '';
+        return decodeURIComponent(target.pathname.slice(root.pathname.length)).replace(/^\/+/, '');
+    } catch (_) {
+        return '';
+    }
+}
+
+function ssvSpineCompanionPaths(path) {
+    if (!/\/data\.json$/i.test(path)) return [];
+    return [path.replace(/data\.json$/i, 'data.atlas'), path.replace(/data\.json$/i, 'data.png')];
+}
+
+async function ssvResolveResourceSources(urls, preferLocal) {
+    const sources = new Map((urls || []).map(url => [url, url]));
+    if (!preferLocal || !urls || !urls.length) return sources;
+    const byPath = new Map();
+    const requestedPaths = new Set();
+    urls.forEach((url) => {
+        const path = ssvRemoteResourcePath(url);
+        if (!path) return;
+        byPath.set(path, url);
+        requestedPaths.add(path);
+        ssvSpineCompanionPaths(path).forEach(item => requestedPaths.add(item));
+    });
+    if (!requestedPaths.size) return sources;
+    try {
+        const response = await fetch('./api/resource-cache-status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ paths: Array.from(requestedPaths) }),
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const payload = await response.json();
+        const present = new Set(Array.isArray(payload.present) ? payload.present : []);
+        byPath.forEach((url, path) => {
+            const companions = ssvSpineCompanionPaths(path);
+            if (!present.has(path) || companions.some(item => !present.has(item))) return;
+            sources.set(url, ssvJoinUrl(SSV_LOCAL_ASSET_ROOT, path.split('/').map(encodeURIComponent).join('/')));
+        });
+    } catch (error) {
+        console.warn('[remote-main] local cache index unavailable; using remote resources', error);
+    }
+    return sources;
 }
 
 function ssvLoadPixiResources(loader, onProgress) {
@@ -287,7 +346,7 @@ async function startScenarioPlayer(eventType, eventId, language) {
     }
 
     const requestedMode = String(params.get('source') || 'auto').toLowerCase();
-    const sourceMode = ['local', 'remote'].includes(requestedMode) ? requestedMode : 'auto';
+    const sourceMode = ['local', 'remote', 'hybrid'].includes(requestedMode) ? requestedMode : 'auto';
     let source;
     ssvSetBootStatus('正在读取剧情 JSON……');
     try {
@@ -390,6 +449,19 @@ async function startScenarioPlayer(eventType, eventId, language) {
         SupportStillFallback.rewriteConvertedMovies(tracks, localCardMovieIds, SSV_LOCAL_ASSET_ROOT);
     }
     const urls = converter.extractResourceList(tracks);
+    ssvSetBootStatus('正在检查本地剧情缓存……');
+    const resourceSources = await ssvResolveResourceSources(urls, source.preferLocalAssets);
+    const editResourceFallback = globalThis.EditModeResourceFallback
+        ? EditModeResourceFallback.apply(tracks, resourceSources, { enabled: editMode })
+        : { tracks, skipped: [] };
+    const skippedEditResources = editResourceFallback.skipped;
+    const preloadUrls = converter.extractResourceList(tracks);
+    if (skippedEditResources.length) {
+        console.info(
+            `[remote-main] edit mode skipped ${skippedEditResources.length} uncached card visual resources`,
+            skippedEditResources,
+        );
+    }
     const loader = PIXI.Loader.shared;
 
     const runtimeRoot = SSV_LOCAL_ASSET_ROOT;
@@ -419,7 +491,7 @@ async function startScenarioPlayer(eventType, eventId, language) {
         const selectFrameRoot = i <= 3 ? runtimeRoot : source.assetRoot;
         ssvAddResource(loader, `selectFrame${i}`, ssvJoinUrl(selectFrameRoot, `images/event/select_frame/${String(i).padStart(3, '0')}.png`));
     }
-    urls.forEach(url => ssvAddResource(loader, url, url));
+    preloadUrls.forEach(url => ssvAddResource(loader, url, resourceSources.get(url) || url));
 
     const failedResources = [];
     const onResourceError = (error, _, resource) => {
@@ -456,6 +528,8 @@ async function startScenarioPlayer(eventType, eventId, language) {
         translationUrl: translation && translation.url,
         translationReport,
         failedResources,
+        skippedEditResources,
+        localResourceCount: Array.from(resourceSources.entries()).filter(([key, value]) => key !== value).length,
         editMode,
         videoExportMode,
     };

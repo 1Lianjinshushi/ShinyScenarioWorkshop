@@ -1,6 +1,6 @@
 {
-  "version": 2,
-  "description": "Files required by the portable player before scenario-specific resources are fetched.",
+  "version": 3,
+  "description": "Files required by the portable player before scenario-specific resources are fetched. Scenario assets use the local cache first and fetch only missing files.",
   "files": [
     "fonts/FOT-HummingPro-B.OTF",
     "fonts/FZFWQINGYINTIJWB.TTF",

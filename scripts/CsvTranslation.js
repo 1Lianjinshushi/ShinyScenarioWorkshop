@@ -248,6 +248,12 @@
             bindings: [],
         };
 
+        const editableCandidates = translatedTracks
+            .map((track, index) => ({ track, index }))
+            .filter(({ track }) => (
+                track && typeof track === 'object'
+                && (typeof track.text === 'string' || typeof track.select === 'string')
+            ));
         const genericCandidates = translatedTracks
             .map((track, index) => ({ track, index }))
             .filter(({ track }) => {
@@ -255,85 +261,37 @@
                 if (!isGenericId(String(track.id == null ? '' : track.id))) return false;
                 return typeof track.text === 'string' || typeof track.select === 'string';
             });
-        let genericCursor = 0;
-
-        const applyRow = (track, trackIndex, row, method) => {
-            const field = chooseField(track, row.text);
-            if (!field) {
-                report.missing++;
-                report.problems.push(`CSV row ${row.rowNumber}: matching track has no text/select field.`);
-                return;
-            }
-            if (normalizeForMatch(track[field]) !== normalizeForMatch(row.text)) {
-                report.sourceMismatches++;
-                report.problems.push(`CSV row ${row.rowNumber}: source text differs for id ${row.id}.`);
-            }
-            track[`${field}_cn`] = toScenarioText(row.trans);
-            report.applied++;
-            report[method]++;
-            report.bindings.push({
-                trackIndex,
-                rowNumber: row.rowNumber,
-                field,
-                id: row.id,
-                name: row.name,
-                text: row.text,
-                trans: row.trans,
-                method,
-            });
-        };
-
-        translationRows.forEach((row) => {
-            if (!isGenericId(row.id)) {
-                const trackIndex = translatedTracks.findIndex(item => (
-                    item && typeof item === 'object' && String(item.id == null ? '' : item.id) === row.id
-                ));
-                if (trackIndex < 0) {
-                    report.missing++;
-                    report.problems.push(`CSV row ${row.rowNumber}: track id ${row.id} was not found.`);
-                    return;
-                }
-                applyRow(translatedTracks[trackIndex], trackIndex, row, 'explicitId');
-                return;
-            }
-
-            const wantedText = normalizeForMatch(row.text);
-            let matchAt = -1;
-            for (let i = genericCursor; i < genericCandidates.length; i++) {
-                const candidate = genericCandidates[i].track;
-                const textMatches = typeof candidate.text === 'string'
-                    && normalizeForMatch(candidate.text) === wantedText;
-                const selectMatches = typeof candidate.select === 'string'
-                    && normalizeForMatch(candidate.select) === wantedText;
-                if (textMatches || selectMatches) {
-                    matchAt = i;
-                    break;
-                }
-            }
-            if (matchAt < 0) {
-                report.missing++;
-                report.problems.push(`CSV row ${row.rowNumber}: zero-id source text was not found in sequence.`);
-                return;
-            }
-            genericCursor = matchAt + 1;
-            applyRow(genericCandidates[matchAt].track, genericCandidates[matchAt].index, row, 'sequential');
-        });
-
         // Editing mode also needs a stable CSV-row binding for untranslated rows.
-        // Build these independently from the applied-translation report so the
-        // existing applied/missing counters keep their original meaning.
+        // Build these before applying translations so repeated explicit ids stay
+        // aligned even when an earlier CSV row is still untranslated.  Some game
+        // scenarios reuse one id for an action-only node and its following line,
+        // or replay the same voiced line later as a flashback.  Only editable
+        // text/select tracks participate, and each matching occurrence is
+        // consumed once in source order.
         const bindingRows = sourceRows.filter(row => (
             row.id && row.id !== 'info' && row.id !== '译者' && (row.text || row.trans)
         ));
         const editBindings = [];
+        const usedExplicitTrackIndexes = new Set();
         let editGenericCursor = 0;
         bindingRows.forEach((row) => {
             let trackIndex = -1;
             let method = 'explicitId';
             if (!isGenericId(row.id)) {
-                trackIndex = translatedTracks.findIndex(item => (
-                    item && typeof item === 'object' && String(item.id == null ? '' : item.id) === row.id
+                const candidates = editableCandidates.filter(({ track, index }) => (
+                    !usedExplicitTrackIndexes.has(index)
+                    && String(track.id == null ? '' : track.id) === row.id
                 ));
+                const wantedText = normalizeForMatch(row.text);
+                const exact = candidates.find(({ track }) => (
+                    (typeof track.text === 'string' && normalizeForMatch(track.text) === wantedText)
+                    || (typeof track.select === 'string' && normalizeForMatch(track.select) === wantedText)
+                ));
+                const selected = exact || candidates[0];
+                if (selected) {
+                    trackIndex = selected.index;
+                    usedExplicitTrackIndexes.add(trackIndex);
+                }
             } else {
                 method = 'sequential';
                 const wantedText = normalizeForMatch(row.text);
@@ -366,6 +324,26 @@
             });
         });
         report.bindings = editBindings;
+
+        const bindingByRowNumber = new Map(editBindings.map(binding => [binding.rowNumber, binding]));
+        translationRows.forEach((row) => {
+            const binding = bindingByRowNumber.get(row.rowNumber);
+            if (!binding) {
+                report.missing++;
+                report.problems.push(isGenericId(row.id)
+                    ? `CSV row ${row.rowNumber}: zero-id source text was not found in sequence.`
+                    : `CSV row ${row.rowNumber}: editable track id ${row.id} was not found.`);
+                return;
+            }
+            const track = translatedTracks[binding.trackIndex];
+            if (normalizeForMatch(track[binding.field]) !== normalizeForMatch(row.text)) {
+                report.sourceMismatches++;
+                report.problems.push(`CSV row ${row.rowNumber}: source text differs for id ${row.id}.`);
+            }
+            track[`${binding.field}_cn`] = toScenarioText(row.trans);
+            report.applied++;
+            report[binding.method]++;
+        });
 
         return { tracks: translatedTracks, report };
     }

@@ -1225,6 +1225,34 @@ function Handle-ApiRequest([IO.Stream]$Stream, [object]$Request) {
         Write-JsonResponse $Stream (Import-OfficialCardResource $kind $cardId $Request.Body $contentType)
         return
     }
+    if ($Request.Method -eq 'POST' -and $Request.Path -eq '/api/resource-cache-status') {
+        $payload = Read-JsonBody $Request
+        $paths = @($payload.paths)
+        if ($paths.Count -gt 4096) { throw 'paths must contain at most 4096 entries' }
+        $present = New-Object Collections.Generic.List[string]
+        $missing = New-Object Collections.Generic.List[string]
+        $seen = @{}
+        [long]$bytes = 0
+        foreach ($value in $paths) {
+            $relative = ([string]$value).Replace('\', '/').TrimStart('/')
+            if ($seen.ContainsKey($relative)) { continue }
+            $seen[$relative] = $true
+            $destination = Resolve-AssetDestination $relative
+            if ([IO.File]::Exists($destination) -and (Get-Item -LiteralPath $destination).Length -gt 0) {
+                $present.Add($relative)
+                $bytes += (Get-Item -LiteralPath $destination).Length
+            } else {
+                $missing.Add($relative)
+            }
+        }
+        Write-JsonResponse $Stream ([ordered]@{
+            version = 1
+            present = @($present.ToArray())
+            missing = @($missing.ToArray())
+            bytes = $bytes
+        })
+        return
+    }
     if ($Request.Method -eq 'POST' -and $Request.Path -eq '/api/cache-resource') {
         $relative = Get-QueryValue $Request.Query 'path'
         $destination = Resolve-AssetDestination $relative

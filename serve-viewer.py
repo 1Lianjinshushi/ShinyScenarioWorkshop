@@ -2653,6 +2653,29 @@ class ViewerRequestHandler(SimpleHTTPRequestHandler):
                 self._send_json(result)
                 return
 
+            if parsed.path == "/api/resource-cache-status":
+                payload = self._read_json()
+                paths = payload.get("paths")
+                if not isinstance(paths, list) or len(paths) > 4096:
+                    raise ValueError("paths must be an array with at most 4096 entries")
+                present: list[str] = []
+                missing: list[str] = []
+                total_bytes = 0
+                for value in dict.fromkeys(str(item or "").replace("\\", "/").lstrip("/") for item in paths):
+                    destination = validated_asset_path(value)
+                    if destination.is_file() and destination.stat().st_size > 0:
+                        present.append(value)
+                        total_bytes += destination.stat().st_size
+                    else:
+                        missing.append(value)
+                self._send_json({
+                    "version": 1,
+                    "present": present,
+                    "missing": missing,
+                    "bytes": total_bytes,
+                })
+                return
+
             if parsed.path == "/api/cache-resource":
                 query = parse_qs(parsed.query)
                 relative = (query.get("path") or [""])[0]

@@ -1,5 +1,5 @@
 param(
-    [string]$Version = '20260816-r9',
+    [string]$Version = '20260831-r11',
     [string]$OutputDirectory = (Join-Path (Split-Path -Parent $PSScriptRoot) 'release')
 )
 
@@ -54,14 +54,37 @@ $files = @(
     'main.css', 'main.js',
     'portable-runtime-assets.json',
     'README.md', 'README.upstream.md',
+    'SHARING-GUIDE-ZH.md',
     'remote-main.js',
     'serve-viewer.py', 'serve-viewer.ps1',
     'THIRD-PARTY-NOTICES.md',
     'UPSTREAM-ATTRIBUTION.md'
 )
 foreach ($file in $files) { Copy-RequiredFile $file }
-foreach ($directory in @('lib', 'speaker', 'tests', 'metadata', 'monitor')) { Copy-RequiredDirectory $directory }
+foreach ($directory in @('lib', 'speaker', 'metadata', 'monitor')) { Copy-RequiredDirectory $directory }
 Copy-RequiredDirectory 'scripts' @('ShinyScenarioUpdateMonitor.user.js')
+
+# Keep the public resource-library/update-log snapshot while removing the
+# developer machine's live listener status, pending official-resource queue,
+# and unread markers. Recipients start with a clean snapshot rather than
+# inheriting the maintainer's personal monitoring state.
+$portableMonitorStatePath = Join-Path $PackageRoot 'monitor\game-update-state.json'
+if ([IO.File]::Exists($portableMonitorStatePath)) {
+    $portableMonitorState = Get-Content -LiteralPath $portableMonitorStatePath -Raw | ConvertFrom-Json
+    if ($portableMonitorState.entries) {
+        foreach ($entry in $portableMonitorState.entries.PSObject.Properties) {
+            if ($entry.Value.PSObject.Properties['unread']) { $entry.Value.unread = $false }
+        }
+    }
+    $portableMonitorState.listenerStatus = [PSCustomObject]@{}
+    $portableMonitorState.resourceRequests = [PSCustomObject]@{}
+    $portableMonitorState | Add-Member -NotePropertyName portableSnapshot -NotePropertyValue $true -Force
+    [IO.File]::WriteAllText(
+        $portableMonitorStatePath,
+        (($portableMonitorState | ConvertTo-Json -Depth 100 -Compress) + "`n"),
+        $Utf8
+    )
+}
 
 $runtimeManifestPath = Join-Path $SourceRoot 'portable-runtime-assets.json'
 $runtimeManifest = Get-Content -LiteralPath $runtimeManifestPath -Raw | ConvertFrom-Json
@@ -107,11 +130,13 @@ Shiny Scenario Workshop Portable Edition $Version
 3. Your browser opens http://127.0.0.1:8000/app.html automatically.
 4. Enter the scenario category and event ID, import one or more translated CSV files, or choose a story from the included resource library.
    The workshop can fetch resources, play the Japanese original, merge translations, and open the editing mode.
+   Loading a scenario starts a background local cache automatically. Playback uses local files first and downloads only missing resources.
    If a Support-card still is missing upstream, select a local game screenshot in the repair panel.
 5. The resource library and update-log snapshot are included. The private game-update listener is not distributed in this portable build.
 6. Close the server window to stop the application.
 
 For a short illustrated Chinese guide and the version maintenance log, open Quick-Guide-ZH.pdf in this folder.
+For sharing, first launch and upgrading without losing cached resources, open SHARING-GUIDE-ZH.md.
 
 No Python installation is required. This launcher uses Windows PowerShell included with Windows 10/11.
 The player foundation is self-contained: the required fonts, common UI atlases,

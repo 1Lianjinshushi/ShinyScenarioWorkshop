@@ -29601,33 +29601,25 @@
       "eventType": "produce_events",
       "eventId": "302402004",
       "storyTitle": "Much Later",
-      "cardName": "【Happy ending?】七草にちか",
-      "cardId": "2040240150",
-      "source": "shinycolors.moe"
+      "source": "sc-viewer.top/name"
     },
     "produce_events/302402003": {
       "eventType": "produce_events",
       "eventId": "302402003",
       "storyTitle": "A While Later",
-      "cardName": "【Happy ending?】七草にちか",
-      "cardId": "2040240150",
-      "source": "shinycolors.moe"
+      "source": "sc-viewer.top/name"
     },
     "produce_events/302402002": {
       "eventType": "produce_events",
       "eventId": "302402002",
       "storyTitle": "A Few Days Later",
-      "cardName": "【Happy ending?】七草にちか",
-      "cardId": "2040240150",
-      "source": "shinycolors.moe"
+      "source": "sc-viewer.top/name"
     },
     "produce_events/302402001": {
       "eventType": "produce_events",
       "eventId": "302402001",
       "storyTitle": "End Of The Line",
-      "cardName": "【Happy ending?】七草にちか",
-      "cardId": "2040240150",
-      "source": "shinycolors.moe"
+      "source": "sc-viewer.top/name"
     },
     "produce_events/302401901": {
       "eventType": "produce_events",
@@ -42977,25 +42969,19 @@
       "eventType": "produce_events",
       "eventId": "201102111",
       "storyTitle": "『アタシ』だから",
-      "cardName": "【one summer】西城樹里",
-      "cardId": "1040110140",
-      "source": "shinycolors.moe"
+      "source": "sc-viewer.top/name"
     },
     "produce_events/201102102": {
       "eventType": "produce_events",
       "eventId": "201102102",
       "storyTitle": "途しるべ",
-      "cardName": "【one summer】西城樹里",
-      "cardId": "1040110140",
-      "source": "shinycolors.moe"
+      "source": "sc-viewer.top/name"
     },
     "produce_events/201102101": {
       "eventType": "produce_events",
       "eventId": "201102101",
       "storyTitle": "眩しさの影",
-      "cardName": "【one summer】西城樹里",
-      "cardId": "1040110140",
-      "source": "shinycolors.moe"
+      "source": "sc-viewer.top/name"
     },
     "produce_events/201102011": {
       "eventType": "produce_events",
@@ -48917,6 +48903,78 @@
       "storyTitle": "Cute is...",
       "cardName": "【B!c,Cib】市川雛菜",
       "cardId": "1040230110",
+      "source": "shinycolors.moe"
+    },
+    "produce_events/301602801": {
+      "eventType": "produce_events",
+      "eventId": "301602801",
+      "storyTitle": "フォトトロ・トピック",
+      "cardName": "【Grow to Glow】桑山千雪",
+      "cardId": "2040160210",
+      "source": "shinycolors.moe"
+    },
+    "produce_events/302202001": {
+      "eventType": "produce_events",
+      "eventId": "302202001",
+      "storyTitle": "友達のさそいかた",
+      "cardName": "【なんでもない夏】福丸小糸",
+      "cardId": "2040220150",
+      "source": "shinycolors.moe"
+    },
+    "produce_events/302202002": {
+      "eventType": "produce_events",
+      "eventId": "302202002",
+      "storyTitle": "ひとことで、大丈夫",
+      "cardName": "【なんでもない夏】福丸小糸",
+      "cardId": "2040220150",
+      "source": "shinycolors.moe"
+    },
+    "produce_events/200502201": {
+      "eventType": "produce_events",
+      "eventId": "200502201",
+      "storyTitle": "ここから水へ",
+      "cardName": "【ダイブ・My・ハート】田中摩美々",
+      "cardId": "1040050150",
+      "source": "shinycolors.moe"
+    },
+    "produce_events/200502202": {
+      "eventType": "produce_events",
+      "eventId": "200502202",
+      "storyTitle": "水中でささやく",
+      "cardName": "【ダイブ・My・ハート】田中摩美々",
+      "cardId": "1040050150",
+      "source": "shinycolors.moe"
+    },
+    "produce_events/200502211": {
+      "eventType": "produce_events",
+      "eventId": "200502211",
+      "storyTitle": "水際はここまで",
+      "cardName": "【ダイブ・My・ハート】田中摩美々",
+      "cardId": "1040050150",
+      "source": "shinycolors.moe"
+    },
+    "produce_events/202801001": {
+      "eventType": "produce_events",
+      "eventId": "202801001",
+      "storyTitle": "スイムについて",
+      "cardName": "【恋まで、あと25メートル】郁田はるき",
+      "cardId": "1040280060",
+      "source": "shinycolors.moe"
+    },
+    "produce_events/202801002": {
+      "eventType": "produce_events",
+      "eventId": "202801002",
+      "storyTitle": "スイについて",
+      "cardName": "【恋まで、あと25メートル】郁田はるき",
+      "cardId": "1040280060",
+      "source": "shinycolors.moe"
+    },
+    "produce_events/202801011": {
+      "eventType": "produce_events",
+      "eventId": "202801011",
+      "storyTitle": "そして、わたし",
+      "cardName": "【恋まで、あと25メートル】郁田はるき",
+      "cardId": "1040280060",
       "source": "shinycolors.moe"
     }
   }

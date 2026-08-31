@@ -14,6 +14,7 @@
 - 图文说明书：从
   [`Quick-Guide-ZH.pdf`](https://github.com/1Lianjinshushi/ShinyScenarioWorkshop/releases/latest/download/Quick-Guide-ZH.pdf)
   下载。
+- 分享、首次启动与后续更新：[`SHARING-GUIDE-ZH.md`](./SHARING-GUIDE-ZH.md)。
 - 版本维护记录：[`CHANGELOG.md`](./CHANGELOG.md)。
 
 公开源码仓库不提交字体、剧情资源、用户翻译、缓存、导出文件、个人运行状态或
@@ -28,7 +29,7 @@
 4. 填写发言人中文名称并保存为长期档案。
 5. 选择 `id,name,text,trans` 翻译 CSV，按 ID 与日文原文双重匹配。
 6. 合成、保存并下载汉化 JSON，也可直接打开播放器验证。
-7. 按需缓存剧情全部资源，切换到离线播放。
+7. 载入剧情后自动后台缓存；播放时优先读取本地文件，只联网补齐缺失项，并可在完整缓存后离线播放。
 8. 自动检查 Support 卡静态演出图；资源站尚未更新时，可绑定本地页游截图作为替代图。
 9. 批量导入关联剧情翻译 CSV，并在汉化播放的 End 续播中继续自动套用对应译文。
 10. 为缺失的 Produce 动态卡图绑定本地 MP4。
@@ -187,7 +188,11 @@ info,<eventType>/<eventId>.json,,
 
 ## 资源来源与缓存
 
-在线播放会从 `https://service.sc-viewer.top/custom/` 按剧情实际引用加载资源。点击“缓存完整资源”后，App 会把以下内容写入本地 `assets/`：
+载入剧情 JSON 后，App 会立即在后台预取该段实际引用的资源并持久保存到本地 `assets/`。日文、汉化和编辑模式默认使用 `hybrid` 混合模式：资源地址仍保持原播放器兼容的远端键，但会先批量查询本地缓存，命中项直接读取本地文件，只有缺失项才访问 `https://service.sc-viewer.top/custom/`。同一文件下载一次后，之后的剧情可以复用，不会因重新打开 App 而清空。
+
+缓存下载采用六路并发、20 秒单次超时和有限重试；播放器最多等待后台缓存 3 秒便会继续打开，个别远端文件异常不会再把整个播放页无限卡在黑屏。手动点击“重新检查本地缓存”可重试此前失败项；全部资源齐备后“离线播放”按钮会启用。
+
+缓存内容包括：
 
 - 剧情 JSON；
 - 背景、前景、立绘 Spine 及其 atlas/贴图；
@@ -195,7 +200,9 @@ info,<eventType>/<eventId>.json,,
 - 对话框、日志头像与选择框；
 - 播放器通用 UI、点击音效及粒子资源。
 
-`produce_events_202101611.zip` 含 53 个剧情资源和 3 个播放器脚本。App 对 `202101611` 推导出的 53 个剧情资源路径与 ZIP 一致；完整缓存另增加 16 个播放器通用资源，共 69 项。
+便携包自身只携带字体、UI、日志头像、交互音效等启动必需的通用运行资源，不提交或再分发剧情专属图片、音频、视频和用户翻译。剧情缓存留在每位使用者解压后的程序目录中；更新程序时可把旧版的 `assets/`、`translations/`、`speaker/` 与 `exports/` 复制到新版继续使用。详细步骤见 [`SHARING-GUIDE-ZH.md`](./SHARING-GUIDE-ZH.md)。
+
+`produce_events_202101611.zip` 含 53 个剧情资源和 3 个播放器脚本。App 对 `202101611` 推导出的 53 个剧情资源路径与 ZIP 一致；完整缓存另增加播放器通用资源。
 
 `202701002` 实测完整缓存 73 项，其中包含 `1040270060` 的卡面动画 MP4、静态卡图 JPG 与专用音效 M4A。播放器可正常完成动画、静态卡图承接、白幕淡入淡出、卡图上对白和退场回到背景。
 
@@ -246,4 +253,4 @@ http://127.0.0.1:8000/?eventType=produce_events&eventId=202701011&language=cn&so
 http://127.0.0.1:8000/?eventType=produce_events&eventId=202701011&language=cn&source=local
 ```
 
-播放器保留 `source=auto`（本地优先）、`source=remote` 和 `source=local` 三种资源模式。
+播放器保留四种资源模式：`source=hybrid`（推荐，本地逐项优先、缺失项远端补齐）、`source=auto`（兼容入口，行为同样本地逐项优先）、`source=remote`（远端 JSON，但仍复用已有本地资源）和 `source=local`（严格离线，缺失即失败）。

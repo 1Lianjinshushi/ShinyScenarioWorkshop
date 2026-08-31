@@ -1,11 +1,19 @@
 # Changelog
 
-## Unreleased
+## 20260831-r11
 
+- Added automatic background prefetch immediately after a scenario JSON is loaded.
+- Added hybrid playback: cached files are loaded locally under their original remote resource keys, while only missing files fall back to the network.
+- Added one batched cache-status API to both the Python development server and the dependency-free Windows PowerShell portable launcher.
+- Added bounded resource download timeouts/retries and a three-second maximum playback wait so one unavailable upstream file cannot hold the player on a black loading screen.
+- Kept Spine JSON local only when its atlas and texture companions are also present, preventing partial-cache animation failures.
+- Added a sharing/update guide explaining first launch, cache persistence, upgrades and what may be redistributed.
 - Restored the legacy `info,<eventType>/<eventId>.json,,` and `译者` CSV footer rows so Workshop exports can be imported by SC-VIEWER and the original page-game translation workflow.
 - Kept log portraits bound to the original Japanese speaker name after Chinese speaker-name localisation.
 - Added the small circular portraits for all 28 regular idols, four collaboration characters, Hazuki, the president, and the anonymous fallback to the local/portable runtime set.
 - Added a remembered Workshop-wide translator signature; single-story, edited and group-ZIP CSV exports now write it into the legacy `译者` footer row.
+- Fixed edit/translation binding when the source scenario reuses one track id for an action-only node and its dialogue, or replays the same id later as a flashback. Duplicate ids are now matched to editable text tracks by source text and occurrence order without changing playback tracks.
+- Allowed edit mode to open before a card is implemented by omitting only uncached static/animated card media from its preload list. Cached card art still appears, while normal Japanese and translated playback keep the complete resource policy.
 
 ## 20260816-r9
 

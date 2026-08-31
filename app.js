@@ -24,6 +24,10 @@ const state = {
     translationAvailable: false,
     storyResources: new Set(),
     cachedLocally: false,
+    cacheTask: null,
+    cacheTaskKey: '',
+    cacheGeneration: 0,
+    cacheBusy: false,
     supportStills: [],
     cardMovies: [],
     supportCheckToken: 0,
@@ -172,6 +176,10 @@ async function fetchScenario() {
     state.unknownSpeakers = [];
     state.storyResources = new Set();
     state.cachedLocally = false;
+    state.cacheGeneration++;
+    state.cacheTask = null;
+    state.cacheTaskKey = '';
+    state.cacheBusy = false;
     state.csvText = '';
     state.csvName = '';
     state.csvEventType = '';
@@ -227,6 +235,11 @@ async function fetchScenario() {
             eventId: state.eventId,
             content: state.rawJson,
         });
+
+        // Start filling the local cache as soon as the scenario JSON is
+        // available. This runs beside metadata/translation checks, so by the
+        // time the user presses Play most large assets are already local.
+        startScenarioResourceCache({ automatic: true });
 
         const supportResult = await inspectSupportStillResources();
         await inspectCardMovieResources();
@@ -453,6 +466,61 @@ function localResourceUrl(path, cacheBust = false) {
 
 async function localResourceExists(path) {
     return SupportStillFallback.resourceExists(localResourceUrl(path));
+}
+
+async function resourceCacheStatus(paths) {
+    const unique = Array.from(new Set((paths || [])
+        .map(path => String(path || '').replace(/^\/+/, ''))
+        .filter(Boolean)));
+    if (!unique.length) return { present: new Set(), missing: new Set(), bytes: 0 };
+    try {
+        const result = await apiPost('./api/resource-cache-status', { paths: unique });
+        return {
+            present: new Set(Array.isArray(result.present) ? result.present : []),
+            missing: new Set(Array.isArray(result.missing) ? result.missing : []),
+            bytes: Number(result.bytes || 0),
+        };
+    } catch (_) {
+        // Compatibility fallback when an old launcher is still serving a
+        // freshly updated frontend. It is slower, but remains functional.
+        const checks = await Promise.all(unique.map(async path => [path, await localResourceExists(path)]));
+        return {
+            present: new Set(checks.filter(([, exists]) => exists).map(([path]) => path)),
+            missing: new Set(checks.filter(([, exists]) => !exists).map(([path]) => path)),
+            bytes: 0,
+        };
+    }
+}
+
+async function fetchResourceBytes(url, attempts = 3, timeoutMs = 20000) {
+    let lastError = null;
+    for (let attempt = 1; attempt <= attempts; attempt++) {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+            const response = await fetch(url, {
+                cache: 'no-store',
+                mode: 'cors',
+                signal: controller.signal,
+            });
+            if (!response.ok) {
+                const error = new Error(`HTTP ${response.status}`);
+                error.status = response.status;
+                throw error;
+            }
+            return new Uint8Array(await response.arrayBuffer());
+        } catch (error) {
+            lastError = error && error.name === 'AbortError'
+                ? new Error(`下载超时（${Math.round(timeoutMs / 1000)} 秒）`)
+                : error;
+            if (Number(error && error.status) >= 400 && Number(error && error.status) < 500
+                && ![408, 429].includes(Number(error.status))) break;
+            if (attempt < attempts) await wait(250 * attempt);
+        } finally {
+            clearTimeout(timeout);
+        }
+    }
+    throw lastError || new Error('资源下载失败');
 }
 
 function wait(milliseconds) {
@@ -841,12 +909,15 @@ function discoverDependencies(path, bytes) {
     return dependencies.filter(Boolean);
 }
 
-async function cacheCompleteResources() {
-    if (!state.tracks) return;
+async function cacheCompleteResources(options = {}) {
+    if (!state.tracks) return { failures: ['剧情尚未载入'], cachedLocally: false };
+    const automatic = !!options.automatic;
+    const generation = state.cacheGeneration;
+    state.cacheBusy = true;
     ui['cache-resources'].disabled = true;
     ui['cache-progress'].hidden = false;
     ui['cache-progress-bar'].style.width = '0%';
-    setGlobalStatus('正在缓存完整资源；请保持页面打开。');
+    if (!automatic) setGlobalStatus('正在缓存完整资源；请保持页面打开。');
 
     const scenarioPath = `json/${state.eventType}/${state.eventId}.json`;
     const pending = Array.from(new Set([
@@ -862,11 +933,16 @@ async function cacheCompleteResources() {
         await apiPost(`./api/cache-resource?path=${encodeURIComponent(scenarioPath)}`,
             new TextEncoder().encode(state.rawJson), 'application/octet-stream');
 
+        const initialStatus = await resourceCacheStatus(pending);
+        const locallyPresent = initialStatus.present;
+
         const updateProgress = () => {
-            const total = Math.max(pending.length, 1);
-            ui['cache-progress-bar'].style.width = `${Math.min(100, completed / total * 100)}%`;
-            ui['cache-progress-text'].textContent = `已缓存 ${completed + 1}/${total + 1} 项；失败 ${failures.length} 项`;
+            if (generation !== state.cacheGeneration) return;
+            const total = Math.max(pending.length + 1, 1);
+            ui['cache-progress-bar'].style.width = `${Math.min(100, (completed + 1) / total * 100)}%`;
+            ui['cache-progress-text'].textContent = `本地资源 ${completed + 1}/${total} 项；失败 ${failures.length} 项`;
         };
+        updateProgress();
 
         const worker = async () => {
             while (true) {
@@ -874,12 +950,11 @@ async function cacheCompleteResources() {
                 if (index >= pending.length) return;
                 const path = pending[index];
                 try {
-                    if (await localResourceExists(path)) continue;
+                    if (locallyPresent.has(path) || await localResourceExists(path)) continue;
                     const encodedPath = path.split('/').map(encodeURIComponent).join('/');
-                    const response = await fetch(`${REMOTE_ROOT}/${encodedPath}`, { cache: 'no-store', mode: 'cors' });
-                    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                    const bytes = new Uint8Array(await response.arrayBuffer());
+                    const bytes = await fetchResourceBytes(`${REMOTE_ROOT}/${encodedPath}`);
                     await apiPost(`./api/cache-resource?path=${encodeURIComponent(path)}`, bytes, 'application/octet-stream');
+                    locallyPresent.add(path);
                     discoverDependencies(path, bytes).forEach((dependency) => {
                         if (!seen.has(dependency)) {
                             seen.add(dependency);
@@ -896,21 +971,62 @@ async function cacheCompleteResources() {
         };
 
         await Promise.all(Array.from({ length: 6 }, () => worker()));
+        if (generation !== state.cacheGeneration) {
+            return { failures, cachedLocally: false, stale: true };
+        }
         state.cachedLocally = failures.length === 0;
         ui['play-local'].disabled = !state.cachedLocally;
         if (failures.length) {
-            ui['cache-progress-text'].textContent = `完成：成功 ${completed - failures.length + 1} 项，失败 ${failures.length} 项。${failures.slice(0, 3).join('；')}`;
-            setGlobalStatus('资源缓存完成，但有文件下载失败；仍建议使用在线播放。', 'error');
+            ui['cache-progress-text'].textContent = `后台缓存完成：成功 ${completed - failures.length + 1} 项，失败 ${failures.length} 项；播放时会自动联网补齐。`;
+            if (!automatic) setGlobalStatus('资源缓存完成，但有文件下载失败；播放时会自动联网补齐。', 'error');
         } else {
             ui['cache-progress-bar'].style.width = '100%';
-            ui['cache-progress-text'].textContent = `完整缓存 ${completed + 1} 项，可离线播放。`;
-            setGlobalStatus(`完整资源已缓存，共 ${completed + 1} 项。`, 'good');
+            ui['cache-progress-text'].textContent = `本地缓存就绪，共 ${completed + 1} 项；后续播放无需重复下载。`;
+            if (!automatic) setGlobalStatus(`完整资源已缓存，共 ${completed + 1} 项。`, 'good');
         }
+        return { failures, cachedLocally: state.cachedLocally, count: completed + 1 };
     } catch (error) {
-        setGlobalStatus(`资源缓存失败：${error.message}`, 'error');
+        if (generation === state.cacheGeneration) {
+            ui['cache-progress-text'].textContent = `后台缓存暂未完成：${error.message}；播放时仍会自动联网补齐。`;
+            if (!automatic) setGlobalStatus(`资源缓存失败：${error.message}`, 'error');
+        }
+        return { failures: [error.message], cachedLocally: false };
     } finally {
-        ui['cache-resources'].disabled = false;
+        if (generation === state.cacheGeneration) {
+            state.cacheBusy = false;
+            updateActionAvailability();
+        }
     }
+}
+
+function startScenarioResourceCache(options = {}) {
+    if (!state.tracks) return Promise.resolve({ failures: ['剧情尚未载入'], cachedLocally: false });
+    if (state.cachedLocally) return Promise.resolve({ failures: [], cachedLocally: true });
+    const key = `${state.eventType}/${state.eventId}/${state.cacheGeneration}`;
+    if (state.cacheTask && state.cacheTaskKey === key) return state.cacheTask;
+    state.cacheTaskKey = key;
+    const work = cacheCompleteResources(options);
+    const tracked = work.finally(() => {
+        if (state.cacheTaskKey === key) {
+            state.cacheTask = null;
+            state.cacheTaskKey = '';
+        }
+    });
+    state.cacheTask = tracked;
+    return tracked;
+}
+
+async function prepareScenarioPlayback(playbackWindow) {
+    if (playbackWindow && !playbackWindow.closed) {
+        playbackWindow.document.body.textContent = '正在检查本地缓存并补齐缺失资源…';
+    }
+    // Give the background cache a short head start without turning a slow or
+    // unavailable upstream file into another long black-screen wait. The
+    // player will use whatever is local at this point and fetch only the rest.
+    await Promise.race([
+        startScenarioResourceCache({ automatic: true }),
+        wait(3000),
+    ]);
 }
 
 function translatedRowCount(rows) {
@@ -1317,7 +1433,8 @@ async function playChineseScenario() {
     ui['play-chinese'].disabled = true;
     try {
         await saveTranslationForPlayback();
-        sendPlaybackWindow(playbackWindow, playerUrl('cn', 'remote'));
+        await prepareScenarioPlayback(playbackWindow);
+        sendPlaybackWindow(playbackWindow, playerUrl('cn', 'hybrid'));
         updateActionAvailability();
     } catch (error) {
         if (playbackWindow && !playbackWindow.closed) playbackWindow.close();
@@ -1331,7 +1448,8 @@ async function playEditScenario() {
     ui['play-edit'].disabled = true;
     try {
         await ensureEditableTranslationCsv();
-        sendPlaybackWindow(playbackWindow, playerUrl('cn', 'remote', 'edit'));
+        await prepareScenarioPlayback(playbackWindow);
+        sendPlaybackWindow(playbackWindow, playerUrl('cn', 'hybrid', 'edit'));
         updateActionAvailability();
     } catch (error) {
         if (playbackWindow && !playbackWindow.closed) playbackWindow.close();
@@ -1653,8 +1771,9 @@ function sendPlaybackWindow(playbackWindow, url) {
     window.location.href = url;
 }
 
-function playScenarioInNewTab(language, source) {
+async function playScenarioInNewTab(language, source) {
     const playbackWindow = openPlaybackWindow();
+    if (source === 'hybrid') await prepareScenarioPlayback(playbackWindow);
     sendPlaybackWindow(playbackWindow, playerUrl(language, source));
 }
 
@@ -1666,7 +1785,7 @@ function updateActionAvailability() {
         && state.csvEventId === state.eventId;
     ui['download-japanese'].disabled = !loaded;
     ui['play-japanese'].disabled = !loaded;
-    ui['cache-resources'].disabled = !loaded;
+    ui['cache-resources'].disabled = !loaded || state.cacheBusy;
     ui['play-local'].disabled = !state.cachedLocally;
     ui['build-translation'].disabled = !csvMatchesCurrent;
     ui['play-chinese'].disabled = !csvMatchesCurrent;
@@ -1680,8 +1799,8 @@ function updateActionAvailability() {
 
 ui['fetch-scenario'].addEventListener('click', fetchScenario);
 ui['download-japanese'].addEventListener('click', () => downloadText(`${state.eventId}.json`, state.rawJson, 'application/json'));
-ui['play-japanese'].addEventListener('click', () => playScenarioInNewTab('', 'remote'));
-ui['cache-resources'].addEventListener('click', cacheCompleteResources);
+ui['play-japanese'].addEventListener('click', () => playScenarioInNewTab('', 'hybrid'));
+ui['cache-resources'].addEventListener('click', () => startScenarioResourceCache({ automatic: false }));
 ui['play-local'].addEventListener('click', () => playScenarioInNewTab('', 'local'));
 ui['save-speakers'].addEventListener('click', saveSpeakerTranslations);
 ui['translation-csv'].addEventListener('change', handleCsvSelection);
