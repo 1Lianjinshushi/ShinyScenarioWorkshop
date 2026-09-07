@@ -126,6 +126,21 @@
         '801': 'bkomachi', '802': 'bkomachi', '803': 'bkomachi', '804': 'lalalai',
     });
 
+    // A.X.E.8. unit-wide chapters use a 10-digit id distinct from the regular
+    // 9-digit support-card format: 3 + unit(4) + chapter(3) + story(2).
+    // Keep the mapping explicit so an unrelated future 10-digit produce id is
+    // never silently treated as a unit chapter.
+    const UNIT_PRODUCE_UNITS = Object.freeze({
+        '0001': 'stars',
+        '0002': 'lantica',
+        '0003': 'houkago',
+        '0004': 'alstroemeria',
+        '0005': 'straylight',
+        '0006': 'noctchill',
+        '0007': 'shhis',
+        '0008': 'cometik',
+    });
+
     const PRODUCE_MODE_LABELS = Object.freeze({
         '000': 'WING序章',
         '001': 'WING',
@@ -361,6 +376,24 @@
                 groupKey: `${type}/${value.slice(0, 7)}`,
                 groupCode: `${value.slice(0, 7)}__`,
                 groupLabel: `${identity.characterName}${cardType === 'Produce' ? 'P卡' : 'S卡'}`,
+            });
+        }
+
+        match = value.match(/^3(\d{4})(\d{3})(\d{2})$/);
+        if (type === 'produce_events' && match && UNIT_PRODUCE_UNITS[match[1]]) {
+            const unitId = UNIT_PRODUCE_UNITS[match[1]];
+            const unit = UNITS[unitId] || UNITS.unknown;
+            return Object.assign({}, fallback, {
+                category: 'unit-produce',
+                categoryLabel: 'A.X.E.8.培育剧情',
+                unitId,
+                unitLabel: unit.label,
+                unitProduceSequence: match[2],
+                storySequence: match[3],
+                storyLabel: storyLabel(match[3]),
+                groupKey: `${type}/${value.slice(0, -2)}`,
+                groupCode: `${value.slice(0, -2)}__`,
+                groupLabel: 'A.X.E.8.',
             });
         }
 
@@ -618,6 +651,7 @@
             'support-card': 2,
             'produce-mode': 3,
             'produce-common': 3,
+            'unit-produce': 3,
             special: 4,
             other: 5,
         };
@@ -665,7 +699,8 @@
         const cardNumber = compactSequence(group.cardSequence);
         const isProduceMode = group.category === 'produce-mode';
         const isProduceCommon = group.category === 'produce-common';
-        const isTrainingGroup = isProduceMode || isProduceCommon || TRAINING_SCENARIO_TYPES.has(group.eventType);
+        const isUnitProduce = group.category === 'unit-produce';
+        const isTrainingGroup = isProduceMode || isProduceCommon || isUnitProduce || TRAINING_SCENARIO_TYPES.has(group.eventType);
         const holidayYear = group.specialKind === 'holiday' && String(group.groupLabel || '').match(/^(\d{4})年/);
         const holidayKindOrder = { 情人节: '1', 白色情人节: '2', 万圣节: '3', 圣诞节: '4' };
         const specialSortKey = holidayYear
@@ -676,7 +711,10 @@
             treeKey: `group/${group.groupKey}`,
             label: isCard
                 ? `第${cardNumber}张${group.cardName ? ` · ${group.cardName}` : ''}`
-                : isProduceMode ? (group.produceMode === '000' ? '序章' : '个人剧情') : isProduceCommon ? group.groupLabel : group.groupLabel,
+                : isProduceMode ? (group.produceMode === '000' ? '序章' : '个人剧情')
+                    : isProduceCommon ? group.groupLabel
+                        : isUnitProduce ? group.groupLabel
+                            : group.groupLabel,
             code: group.groupCode,
             description: group.categoryLabel,
             category: group.category,
@@ -685,10 +723,16 @@
             activityLabel: group.activityLabel || '',
             specialKind: group.specialKind || '',
             produceMode: group.produceMode || '',
+            unitId: group.unitId || '',
+            unitLabel: group.unitLabel || '',
+            unitProduceSequence: group.unitProduceSequence || '',
             trainingGroup: isTrainingGroup,
             sortKey: isCard
                 ? String(9999 - Number(group.cardSequence || 0)).padStart(4, '0')
-                : isProduceMode ? '0' : isProduceCommon ? `1/${group.groupCode}` : specialSortKey,
+                : isProduceMode ? '0'
+                    : isProduceCommon ? `1/${group.groupCode}`
+                        : isUnitProduce ? `0/${group.unitProduceSequence || group.groupCode}`
+                            : specialSortKey,
             unreadCount: Number(group.unreadCount || 0),
             totalCount: group.children.length,
             children: group.children,
@@ -713,6 +757,7 @@
         const groups = groupScenarioEntries(entries);
         const activityGroups = [];
         const trainingCharacters = new Map();
+        const unitTrainingGroups = new Map();
         const specialTypes = new Map();
         const characters = new Map();
 
@@ -839,6 +884,10 @@
         for (const group of groups) {
             if (group.category === 'game-event') {
                 activityGroups.push(hierarchyGroup(group));
+            } else if (group.category === 'unit-produce') {
+                const unitId = group.unitId || 'unknown';
+                if (!unitTrainingGroups.has(unitId)) unitTrainingGroups.set(unitId, []);
+                unitTrainingGroups.get(unitId).push(hierarchyGroup(group));
             } else if (['produce-mode', 'produce-common'].includes(group.category) || TRAINING_SCENARIO_TYPES.has(group.eventType)) {
                 const character = trainingCharacter(group);
                 const type = trainingType(character, group);
@@ -930,20 +979,32 @@
         }).sort(compareLabel);
 
         const trainingUnits = new Map();
-        for (const character of trainingCharacterNodes) {
-            const unitId = character.unitId || 'unknown';
-            const unit = UNITS[unitId] || UNITS.unknown;
-            if (!trainingUnits.has(unitId)) {
-                trainingUnits.set(unitId, {
+        function ensureTrainingUnit(unitId) {
+            const normalizedId = UNITS[unitId] ? unitId : 'unknown';
+            const unit = UNITS[normalizedId] || UNITS.unknown;
+            if (!trainingUnits.has(normalizedId)) {
+                trainingUnits.set(normalizedId, {
                     kind: 'training-unit',
-                    treeKey: `training/unit/${unitId}`,
-                    label: unitId === 'unknown' ? '共通／杂项' : unit.label,
-                    description: unitId === 'unknown' ? '无法归入单一组合的培育内容' : unit.official,
+                    treeKey: `training/unit/${normalizedId}`,
+                    label: normalizedId === 'unknown' ? '共通／杂项' : unit.label,
+                    description: normalizedId === 'unknown' ? '无法归入单一组合的培育内容' : unit.official,
                     sortKey: unit.sortKey,
                     children: [],
                 });
             }
-            trainingUnits.get(unitId).children.push(character);
+            return trainingUnits.get(normalizedId);
+        }
+        for (const character of trainingCharacterNodes) {
+            const unitId = character.unitId || 'unknown';
+            ensureTrainingUnit(unitId).children.push(character);
+        }
+        for (const [unitId, groups] of unitTrainingGroups) {
+            groups.sort(compareLabel);
+            const unit = ensureTrainingUnit(unitId);
+            // A.X.E.8. is a full produce mode, on the same level as W.I.N.G.,
+            // Fan Appreciation, G.R.A.D., LP and STEP.  It is unit-wide, so it
+            // belongs directly under the unit rather than under one idol.
+            unit.children.push(...groups);
         }
         const trainingNodes = Array.from(trainingUnits.values()).map(unit => {
             unit.children.sort(compareLabel);
@@ -963,7 +1024,7 @@
             }),
             aggregateBranch({
                 kind: 'root', treeKey: 'root/training', label: '育成',
-                description: '按组合 → 角色 → Common五大模式／育成模式杂项整理；每个主篇章另设篇章杂项', sortKey: '2', children: trainingNodes,
+                description: '按组合整理 A.X.E.8. 与角色的 W.I.N.G.、感谢祭、G.R.A.D.、LP、STEP；各主篇章另设篇章杂项', sortKey: '2', children: trainingNodes,
             }),
             aggregateBranch({
                 kind: 'root', treeKey: 'root/special', label: '特殊剧情',
@@ -986,6 +1047,9 @@
         if (group.category === 'produce-mode' || group.category === 'produce-common') {
             const shortName = CHARACTER_SHORT_NAMES[group.characterId] || group.characterName || '共通';
             return `${shortName}-${group.produceModeLabel || '育成'}`;
+        }
+        if (group.category === 'unit-produce') {
+            return `${group.unitLabel || '组合'}-A.X.E.8.`;
         }
         if (group.category === 'special') {
             if (group.specialKind === 'birthday') {
@@ -1044,8 +1108,9 @@
         }
         const title = String(entry.storyTitle || '').trim();
         const numberedCard = classification.category === 'produce-card' || classification.category === 'support-card';
-        const numberedTrainingMain = classification.category === 'produce-mode'
-            && isProduceModeMainSequence(classification.produceMode, classification.storySequence);
+        const numberedTrainingMain = classification.category === 'unit-produce'
+            || (classification.category === 'produce-mode'
+                && isProduceModeMainSequence(classification.produceMode, classification.storySequence));
         if (title && (numberedCard || numberedTrainingMain)) {
             const sequence = classification.storySequence === '11'
                 ? 'TE'
@@ -1223,6 +1288,7 @@
         CHARACTER_SHORT_NAMES,
         UNITS,
         CHARACTER_UNITS,
+        UNIT_PRODUCE_UNITS,
         PRODUCE_MODE_LABELS,
         SCENARIO_TYPE_LABELS,
         normalizePath,

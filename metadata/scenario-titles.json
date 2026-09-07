@@ -28851,25 +28851,33 @@
       "eventType": "produce_events",
       "eventId": "302502204",
       "storyTitle": "little smiles",
-      "source": "sc-viewer.top/name"
+      "cardName": "【REHEARSE】緋田美琴",
+      "cardId": "2050250010",
+      "source": "shinycolors.moe"
     },
     "produce_events/302502203": {
       "eventType": "produce_events",
       "eventId": "302502203",
       "storyTitle": "pure scenes",
-      "source": "sc-viewer.top/name"
+      "cardName": "【REHEARSE】緋田美琴",
+      "cardId": "2050250010",
+      "source": "shinycolors.moe"
     },
     "produce_events/302502202": {
       "eventType": "produce_events",
       "eventId": "302502202",
       "storyTitle": "ordinary days",
-      "source": "sc-viewer.top/name"
+      "cardName": "【REHEARSE】緋田美琴",
+      "cardId": "2050250010",
+      "source": "shinycolors.moe"
     },
     "produce_events/302502201": {
       "eventType": "produce_events",
       "eventId": "302502201",
       "storyTitle": "small steps",
-      "source": "sc-viewer.top/name"
+      "cardName": "【REHEARSE】緋田美琴",
+      "cardId": "2050250010",
+      "source": "shinycolors.moe"
     },
     "produce_events/302002104": {
       "eventType": "produce_events",
@@ -29367,235 +29375,313 @@
       "eventType": "produce_events",
       "eventId": "302502402",
       "storyTitle": "sing on",
-      "source": "sc-viewer.top/name"
+      "cardName": "【ROOTS】緋田美琴",
+      "cardId": "2040250190",
+      "source": "shinycolors.moe"
     },
     "produce_events/302502401": {
       "eventType": "produce_events",
       "eventId": "302502401",
       "storyTitle": "play on",
-      "source": "sc-viewer.top/name"
+      "cardName": "【ROOTS】緋田美琴",
+      "cardId": "2040250190",
+      "source": "shinycolors.moe"
     },
     "produce_events/302502302": {
       "eventType": "produce_events",
       "eventId": "302502302",
       "storyTitle": "case closed",
-      "source": "sc-viewer.top/name"
+      "cardName": "【FRIEND】緋田美琴",
+      "cardId": "2040250170",
+      "source": "shinycolors.moe"
     },
     "produce_events/302502301": {
       "eventType": "produce_events",
       "eventId": "302502301",
       "storyTitle": "fantasy",
-      "source": "sc-viewer.top/name"
+      "cardName": "【FRIEND】緋田美琴",
+      "cardId": "2040250170",
+      "source": "shinycolors.moe"
     },
     "produce_events/302502101": {
       "eventType": "produce_events",
       "eventId": "302502101",
       "storyTitle": "one snap",
-      "source": "sc-viewer.top/name"
+      "cardName": "【螺旋 -Halo around-】緋田美琴",
+      "cardId": "2040250160",
+      "source": "shinycolors.moe"
     },
     "produce_events/302502001": {
       "eventType": "produce_events",
       "eventId": "302502001",
       "storyTitle": "fancy fancy",
-      "source": "sc-viewer.top/name"
+      "cardName": "【SPECTACLES】緋田美琴",
+      "cardId": "2040250150",
+      "source": "shinycolors.moe"
     },
     "produce_events/302501801": {
       "eventType": "produce_events",
       "eventId": "302501801",
       "storyTitle": "deep breath",
-      "source": "sc-viewer.top/name"
+      "cardName": "【円環 -Halo around-】緋田美琴",
+      "cardId": "2040250140",
+      "source": "shinycolors.moe"
     },
     "produce_events/302501702": {
       "eventType": "produce_events",
       "eventId": "302501702",
       "storyTitle": "last sheep",
-      "source": "sc-viewer.top/name"
+      "cardName": "【INSOMNIAC】緋田美琴",
+      "cardId": "2040250130",
+      "source": "shinycolors.moe"
     },
     "produce_events/302501701": {
       "eventType": "produce_events",
       "eventId": "302501701",
       "storyTitle": "lost sleep",
-      "source": "sc-viewer.top/name"
+      "cardName": "【INSOMNIAC】緋田美琴",
+      "cardId": "2040250130",
+      "source": "shinycolors.moe"
     },
     "produce_events/302501603": {
       "eventType": "produce_events",
       "eventId": "302501603",
       "storyTitle": "a or b",
-      "source": "sc-viewer.top/name"
+      "cardName": "【DIGEST】緋田美琴",
+      "cardId": "2040250120",
+      "source": "shinycolors.moe"
     },
     "produce_events/302501602": {
       "eventType": "produce_events",
       "eventId": "302501602",
       "storyTitle": "all or nothing",
-      "source": "sc-viewer.top/name"
+      "cardName": "【DIGEST】緋田美琴",
+      "cardId": "2040250120",
+      "source": "shinycolors.moe"
     },
     "produce_events/302501601": {
       "eventType": "produce_events",
       "eventId": "302501601",
       "storyTitle": "yes or no",
-      "source": "sc-viewer.top/name"
+      "cardName": "【DIGEST】緋田美琴",
+      "cardId": "2040250120",
+      "source": "shinycolors.moe"
     },
     "produce_events/302501402": {
       "eventType": "produce_events",
       "eventId": "302501402",
       "storyTitle": "surprise",
-      "source": "sc-viewer.top/name"
+      "cardName": "【GIFT】緋田美琴",
+      "cardId": "2040250110",
+      "source": "shinycolors.moe"
     },
     "produce_events/302501401": {
       "eventType": "produce_events",
       "eventId": "302501401",
       "storyTitle": "hide",
-      "source": "sc-viewer.top/name"
+      "cardName": "【GIFT】緋田美琴",
+      "cardId": "2040250110",
+      "source": "shinycolors.moe"
     },
     "produce_events/302501302": {
       "eventType": "produce_events",
       "eventId": "302501302",
       "storyTitle": "play catch",
-      "source": "sc-viewer.top/name"
+      "cardName": "【BLUE SKY】緋田美琴",
+      "cardId": "2040250100",
+      "source": "shinycolors.moe"
     },
     "produce_events/302501301": {
       "eventType": "produce_events",
       "eventId": "302501301",
       "storyTitle": "back side",
-      "source": "sc-viewer.top/name"
+      "cardName": "【BLUE SKY】緋田美琴",
+      "cardId": "2040250100",
+      "source": "shinycolors.moe"
     },
     "produce_events/302501202": {
       "eventType": "produce_events",
       "eventId": "302501202",
       "storyTitle": "recipe",
-      "source": "sc-viewer.top/name"
+      "cardName": "【AWAKE】緋田美琴",
+      "cardId": "2040250090",
+      "source": "shinycolors.moe"
     },
     "produce_events/302501201": {
       "eventType": "produce_events",
       "eventId": "302501201",
       "storyTitle": "defeat",
-      "source": "sc-viewer.top/name"
+      "cardName": "【AWAKE】緋田美琴",
+      "cardId": "2040250090",
+      "source": "shinycolors.moe"
     },
     "produce_events/302501103": {
       "eventType": "produce_events",
       "eventId": "302501103",
       "storyTitle": "one sound",
-      "source": "sc-viewer.top/name"
+      "cardName": "【overlap】緋田美琴",
+      "cardId": "2040250080",
+      "source": "shinycolors.moe"
     },
     "produce_events/302501102": {
       "eventType": "produce_events",
       "eventId": "302501102",
       "storyTitle": "form",
-      "source": "sc-viewer.top/name"
+      "cardName": "【overlap】緋田美琴",
+      "cardId": "2040250080",
+      "source": "shinycolors.moe"
     },
     "produce_events/302501101": {
       "eventType": "produce_events",
       "eventId": "302501101",
       "storyTitle": "instrument",
-      "source": "sc-viewer.top/name"
+      "cardName": "【overlap】緋田美琴",
+      "cardId": "2040250080",
+      "source": "shinycolors.moe"
     },
     "produce_events/302501002": {
       "eventType": "produce_events",
       "eventId": "302501002",
       "storyTitle": "future",
-      "source": "sc-viewer.top/name"
+      "cardName": "【STAGE】緋田美琴",
+      "cardId": "2040250070",
+      "source": "shinycolors.moe"
     },
     "produce_events/302501001": {
       "eventType": "produce_events",
       "eventId": "302501001",
       "storyTitle": "past",
-      "source": "sc-viewer.top/name"
+      "cardName": "【STAGE】緋田美琴",
+      "cardId": "2040250070",
+      "source": "shinycolors.moe"
     },
     "produce_events/302500902": {
       "eventType": "produce_events",
       "eventId": "302500902",
       "storyTitle": "dish",
-      "source": "sc-viewer.top/name"
+      "cardName": "【MADE】緋田美琴",
+      "cardId": "2040250060",
+      "source": "shinycolors.moe"
     },
     "produce_events/302500901": {
       "eventType": "produce_events",
       "eventId": "302500901",
       "storyTitle": "craft",
-      "source": "sc-viewer.top/name"
+      "cardName": "【MADE】緋田美琴",
+      "cardId": "2040250060",
+      "source": "shinycolors.moe"
     },
     "produce_events/302500803": {
       "eventType": "produce_events",
       "eventId": "302500803",
       "storyTitle": "vision",
-      "source": "sc-viewer.top/name"
+      "cardName": "【GAP】緋田美琴",
+      "cardId": "2040250050",
+      "source": "shinycolors.moe"
     },
     "produce_events/302500802": {
       "eventType": "produce_events",
       "eventId": "302500802",
       "storyTitle": "hometown",
-      "source": "sc-viewer.top/name"
+      "cardName": "【GAP】緋田美琴",
+      "cardId": "2040250050",
+      "source": "shinycolors.moe"
     },
     "produce_events/302500801": {
       "eventType": "produce_events",
       "eventId": "302500801",
       "storyTitle": "topic",
-      "source": "sc-viewer.top/name"
+      "cardName": "【GAP】緋田美琴",
+      "cardId": "2040250050",
+      "source": "shinycolors.moe"
     },
     "produce_events/302500703": {
       "eventType": "produce_events",
       "eventId": "302500703",
       "storyTitle": "cake",
-      "source": "sc-viewer.top/name"
+      "cardName": "【LATE】緋田美琴",
+      "cardId": "2040250040",
+      "source": "shinycolors.moe"
     },
     "produce_events/302500702": {
       "eventType": "produce_events",
       "eventId": "302500702",
       "storyTitle": "water",
-      "source": "sc-viewer.top/name"
+      "cardName": "【LATE】緋田美琴",
+      "cardId": "2040250040",
+      "source": "shinycolors.moe"
     },
     "produce_events/302500701": {
       "eventType": "produce_events",
       "eventId": "302500701",
       "storyTitle": "chocolate",
-      "source": "sc-viewer.top/name"
+      "cardName": "【LATE】緋田美琴",
+      "cardId": "2040250040",
+      "source": "shinycolors.moe"
     },
     "produce_events/302500602": {
       "eventType": "produce_events",
       "eventId": "302500602",
       "storyTitle": "soiree",
-      "source": "sc-viewer.top/name"
+      "cardName": "【X-DAY】緋田美琴",
+      "cardId": "2040250030",
+      "source": "shinycolors.moe"
     },
     "produce_events/302500601": {
       "eventType": "produce_events",
       "eventId": "302500601",
       "storyTitle": "matinee",
-      "source": "sc-viewer.top/name"
+      "cardName": "【X-DAY】緋田美琴",
+      "cardId": "2040250030",
+      "source": "shinycolors.moe"
     },
     "produce_events/302500403": {
       "eventType": "produce_events",
       "eventId": "302500403",
       "storyTitle": "lemon",
-      "source": "sc-viewer.top/name"
+      "cardName": "【RESONANCE】緋田美琴",
+      "cardId": "2040250020",
+      "source": "shinycolors.moe"
     },
     "produce_events/302500402": {
       "eventType": "produce_events",
       "eventId": "302500402",
       "storyTitle": "offender",
-      "source": "sc-viewer.top/name"
+      "cardName": "【RESONANCE】緋田美琴",
+      "cardId": "2040250020",
+      "source": "shinycolors.moe"
     },
     "produce_events/302500401": {
       "eventType": "produce_events",
       "eventId": "302500401",
       "storyTitle": "prize",
-      "source": "sc-viewer.top/name"
+      "cardName": "【RESONANCE】緋田美琴",
+      "cardId": "2040250020",
+      "source": "shinycolors.moe"
     },
     "produce_events/302500303": {
       "eventType": "produce_events",
       "eventId": "302500303",
       "storyTitle": "answer",
-      "source": "sc-viewer.top/name"
+      "cardName": "【A】緋田美琴",
+      "cardId": "2040250010",
+      "source": "shinycolors.moe"
     },
     "produce_events/302500302": {
       "eventType": "produce_events",
       "eventId": "302500302",
       "storyTitle": "autograph",
-      "source": "sc-viewer.top/name"
+      "cardName": "【A】緋田美琴",
+      "cardId": "2040250010",
+      "source": "shinycolors.moe"
     },
     "produce_events/302500301": {
       "eventType": "produce_events",
       "eventId": "302500301",
       "storyTitle": "available",
-      "source": "sc-viewer.top/name"
+      "cardName": "【A】緋田美琴",
+      "cardId": "2040250010",
+      "source": "shinycolors.moe"
     },
     "produce_events/302402004": {
       "eventType": "produce_events",
@@ -30477,205 +30563,273 @@
       "eventType": "produce_events",
       "eventId": "301901905",
       "storyTitle": "数ヶ月後",
-      "source": "sc-viewer.top/name"
+      "cardName": "【２８３ファミリー】和泉愛依",
+      "cardId": "2040190150",
+      "source": "shinycolors.moe"
     },
     "produce_events/301901904": {
       "eventType": "produce_events",
       "eventId": "301901904",
       "storyTitle": "数週間後",
-      "source": "sc-viewer.top/name"
+      "cardName": "【２８３ファミリー】和泉愛依",
+      "cardId": "2040190150",
+      "source": "shinycolors.moe"
     },
     "produce_events/301901903": {
       "eventType": "produce_events",
       "eventId": "301901903",
       "storyTitle": "数日後",
-      "source": "sc-viewer.top/name"
+      "cardName": "【２８３ファミリー】和泉愛依",
+      "cardId": "2040190150",
+      "source": "shinycolors.moe"
     },
     "produce_events/301901902": {
       "eventType": "produce_events",
       "eventId": "301901902",
       "storyTitle": "初日",
-      "source": "sc-viewer.top/name"
+      "cardName": "【２８３ファミリー】和泉愛依",
+      "cardId": "2040190150",
+      "source": "shinycolors.moe"
     },
     "produce_events/301901901": {
       "eventType": "produce_events",
       "eventId": "301901901",
       "storyTitle": "★どうなる、人生──！？",
-      "source": "sc-viewer.top/name"
+      "cardName": "【２８３ファミリー】和泉愛依",
+      "cardId": "2040190150",
+      "source": "shinycolors.moe"
     },
     "produce_events/301901701": {
       "eventType": "produce_events",
       "eventId": "301901701",
       "storyTitle": "P and M",
-      "source": "sc-viewer.top/name"
+      "cardName": "【間違われるっしょ？】和泉愛依",
+      "cardId": "2040190130",
+      "source": "shinycolors.moe"
     },
     "produce_events/301901602": {
       "eventType": "produce_events",
       "eventId": "301901602",
       "storyTitle": "だいたい分かんない",
-      "source": "sc-viewer.top/name"
+      "cardName": "【獲るよ！】和泉愛依",
+      "cardId": "2040190110",
+      "source": "shinycolors.moe"
     },
     "produce_events/301901601": {
       "eventType": "produce_events",
       "eventId": "301901601",
       "storyTitle": "叶えたい……叶える……！",
-      "source": "sc-viewer.top/name"
+      "cardName": "【獲るよ！】和泉愛依",
+      "cardId": "2040190110",
+      "source": "shinycolors.moe"
     },
     "produce_events/301901503": {
       "eventType": "produce_events",
       "eventId": "301901503",
       "storyTitle": "大切にする～！",
-      "source": "sc-viewer.top/name"
+      "cardName": "【誓う～！】和泉愛依",
+      "cardId": "2040190090",
+      "source": "shinycolors.moe"
     },
     "produce_events/301901502": {
       "eventType": "produce_events",
       "eventId": "301901502",
       "storyTitle": "修行～♪",
-      "source": "sc-viewer.top/name"
+      "cardName": "【誓う～！】和泉愛依",
+      "cardId": "2040190090",
+      "source": "shinycolors.moe"
     },
     "produce_events/301901501": {
       "eventType": "produce_events",
       "eventId": "301901501",
       "storyTitle": "憧れ～",
-      "source": "sc-viewer.top/name"
+      "cardName": "【誓う～！】和泉愛依",
+      "cardId": "2040190090",
+      "source": "shinycolors.moe"
     },
     "produce_events/301901302": {
       "eventType": "produce_events",
       "eventId": "301901302",
       "storyTitle": "また今度～",
-      "source": "sc-viewer.top/name"
+      "cardName": "【なんでもない～】和泉愛依",
+      "cardId": "2040190080",
+      "source": "shinycolors.moe"
     },
     "produce_events/301901301": {
       "eventType": "produce_events",
       "eventId": "301901301",
       "storyTitle": "ごめんっ！",
-      "source": "sc-viewer.top/name"
+      "cardName": "【なんでもない～】和泉愛依",
+      "cardId": "2040190080",
+      "source": "shinycolors.moe"
     },
     "produce_events/301901203": {
       "eventType": "produce_events",
       "eventId": "301901203",
       "storyTitle": "ちゃんと食べないと～？",
-      "source": "sc-viewer.top/name"
+      "cardName": "【本気！餅つき！】和泉愛依",
+      "cardId": "2040190070",
+      "source": "shinycolors.moe"
     },
     "produce_events/301901202": {
       "eventType": "produce_events",
       "eventId": "301901202",
       "storyTitle": "あさひちゃんと、よいしょ",
-      "source": "sc-viewer.top/name"
+      "cardName": "【本気！餅つき！】和泉愛依",
+      "cardId": "2040190070",
+      "source": "shinycolors.moe"
     },
     "produce_events/301901201": {
       "eventType": "produce_events",
       "eventId": "301901201",
       "storyTitle": "気合を入れて～、よいしょ～！",
-      "source": "sc-viewer.top/name"
+      "cardName": "【本気！餅つき！】和泉愛依",
+      "cardId": "2040190070",
+      "source": "shinycolors.moe"
     },
     "produce_events/301901103": {
       "eventType": "produce_events",
       "eventId": "301901103",
       "storyTitle": "放課後の買い食い～♪",
-      "source": "sc-viewer.top/name"
+      "cardName": "【左選んで～！】和泉愛依",
+      "cardId": "2040190060",
+      "source": "shinycolors.moe"
     },
     "produce_events/301901102": {
       "eventType": "produce_events",
       "eventId": "301901102",
       "storyTitle": "おはようございます！先輩！",
-      "source": "sc-viewer.top/name"
+      "cardName": "【左選んで～！】和泉愛依",
+      "cardId": "2040190060",
+      "source": "shinycolors.moe"
     },
     "produce_events/301901101": {
       "eventType": "produce_events",
       "eventId": "301901101",
       "storyTitle": "うちに勝てる～？",
-      "source": "sc-viewer.top/name"
+      "cardName": "【左選んで～！】和泉愛依",
+      "cardId": "2040190060",
+      "source": "shinycolors.moe"
     },
     "produce_events/301901003": {
       "eventType": "produce_events",
       "eventId": "301901003",
       "storyTitle": "食べすぎ、眠すぎ～",
-      "source": "sc-viewer.top/name"
+      "cardName": "【よしよし♪】和泉愛依",
+      "cardId": "2040190050",
+      "source": "shinycolors.moe"
     },
     "produce_events/301901002": {
       "eventType": "produce_events",
       "eventId": "301901002",
       "storyTitle": "面白トーク♪",
-      "source": "sc-viewer.top/name"
+      "cardName": "【よしよし♪】和泉愛依",
+      "cardId": "2040190050",
+      "source": "shinycolors.moe"
     },
     "produce_events/301901001": {
       "eventType": "produce_events",
       "eventId": "301901001",
       "storyTitle": "ブイっ！",
-      "source": "sc-viewer.top/name"
+      "cardName": "【よしよし♪】和泉愛依",
+      "cardId": "2040190050",
+      "source": "shinycolors.moe"
     },
     "produce_events/301900803": {
       "eventType": "produce_events",
       "eventId": "301900803",
       "storyTitle": "愛のおはなし",
-      "source": "sc-viewer.top/name"
+      "cardName": "【いるっしょ！】和泉愛依",
+      "cardId": "2040190040",
+      "source": "shinycolors.moe"
     },
     "produce_events/301900802": {
       "eventType": "produce_events",
       "eventId": "301900802",
       "storyTitle": "朝のおはなし",
-      "source": "sc-viewer.top/name"
+      "cardName": "【いるっしょ！】和泉愛依",
+      "cardId": "2040190040",
+      "source": "shinycolors.moe"
     },
     "produce_events/301900801": {
       "eventType": "produce_events",
       "eventId": "301900801",
       "storyTitle": "冬のおはなし",
-      "source": "sc-viewer.top/name"
+      "cardName": "【いるっしょ！】和泉愛依",
+      "cardId": "2040190040",
+      "source": "shinycolors.moe"
     },
     "produce_events/301900703": {
       "eventType": "produce_events",
       "eventId": "301900703",
       "storyTitle": "パーティできた～♪",
-      "source": "sc-viewer.top/name"
+      "cardName": "【エンジョイ！パーティ】和泉愛依",
+      "cardId": "2040190030",
+      "source": "shinycolors.moe"
     },
     "produce_events/301900702": {
       "eventType": "produce_events",
       "eventId": "301900702",
       "storyTitle": "パーティできないの～？",
-      "source": "sc-viewer.top/name"
+      "cardName": "【エンジョイ！パーティ】和泉愛依",
+      "cardId": "2040190030",
+      "source": "shinycolors.moe"
     },
     "produce_events/301900701": {
       "eventType": "produce_events",
       "eventId": "301900701",
       "storyTitle": "パーティしようよ～",
-      "source": "sc-viewer.top/name"
+      "cardName": "【エンジョイ！パーティ】和泉愛依",
+      "cardId": "2040190030",
+      "source": "shinycolors.moe"
     },
     "produce_events/301900503": {
       "eventType": "produce_events",
       "eventId": "301900503",
       "storyTitle": "よかった～！",
-      "source": "sc-viewer.top/name"
+      "cardName": "【うち来る～！？】和泉愛依",
+      "cardId": "2040190020",
+      "source": "shinycolors.moe"
     },
     "produce_events/301900502": {
       "eventType": "produce_events",
       "eventId": "301900502",
       "storyTitle": "なんにもないけどね～！",
-      "source": "sc-viewer.top/name"
+      "cardName": "【うち来る～！？】和泉愛依",
+      "cardId": "2040190020",
+      "source": "shinycolors.moe"
     },
     "produce_events/301900501": {
       "eventType": "produce_events",
       "eventId": "301900501",
       "storyTitle": "いつ空いてる～？",
-      "source": "sc-viewer.top/name"
+      "cardName": "【うち来る～！？】和泉愛依",
+      "cardId": "2040190020",
+      "source": "shinycolors.moe"
     },
     "produce_events/301900403": {
       "eventType": "produce_events",
       "eventId": "301900403",
       "storyTitle": "シー",
-      "source": "sc-viewer.top/name"
+      "cardName": "【なるんじゃん？】和泉愛依",
+      "cardId": "2040190010",
+      "source": "shinycolors.moe"
     },
     "produce_events/301900402": {
       "eventType": "produce_events",
       "eventId": "301900402",
       "storyTitle": "ズンチャー！",
-      "source": "sc-viewer.top/name"
+      "cardName": "【なるんじゃん？】和泉愛依",
+      "cardId": "2040190010",
+      "source": "shinycolors.moe"
     },
     "produce_events/301900401": {
       "eventType": "produce_events",
       "eventId": "301900401",
       "storyTitle": "ロッキュー！",
-      "source": "sc-viewer.top/name"
+      "cardName": "【なるんじゃん？】和泉愛依",
+      "cardId": "2040190010",
+      "source": "shinycolors.moe"
     },
     "produce_events/301802402": {
       "eventType": "produce_events",
@@ -32619,259 +32773,345 @@
       "eventType": "produce_events",
       "eventId": "301002601",
       "storyTitle": "プレゼントはチョコでOK？",
-      "source": "sc-viewer.top/name"
+      "cardName": "【notちょこっとbutどばっと】園田智代子",
+      "cardId": "2040100180",
+      "source": "shinycolors.moe"
     },
     "produce_events/301002503": {
       "eventType": "produce_events",
       "eventId": "301002503",
       "storyTitle": "強化月間（途中経過）",
-      "source": "sc-viewer.top/name"
+      "cardName": "【Perfect☆February】園田智代子",
+      "cardId": "2040100170",
+      "source": "shinycolors.moe"
     },
     "produce_events/301002502": {
       "eventType": "produce_events",
       "eventId": "301002502",
       "storyTitle": "チョコアイドル、八面六臂！",
-      "source": "sc-viewer.top/name"
+      "cardName": "【Perfect☆February】園田智代子",
+      "cardId": "2040100170",
+      "source": "shinycolors.moe"
     },
     "produce_events/301002501": {
       "eventType": "produce_events",
       "eventId": "301002501",
       "storyTitle": "にゃんにゃんにゃんにゃ",
-      "source": "sc-viewer.top/name"
+      "cardName": "【Perfect☆February】園田智代子",
+      "cardId": "2040100170",
+      "source": "shinycolors.moe"
     },
     "produce_events/301002301": {
       "eventType": "produce_events",
       "eventId": "301002301",
       "storyTitle": "したたかふたり",
-      "source": "sc-viewer.top/name"
+      "cardName": "【円環 -Halo around-】園田智代子",
+      "cardId": "2040100160",
+      "source": "shinycolors.moe"
     },
     "produce_events/301002202": {
       "eventType": "produce_events",
       "eventId": "301002202",
       "storyTitle": "おもいのこうかんこ",
-      "source": "sc-viewer.top/name"
+      "cardName": "【クライマックス↑↓大貧民】園田智代子",
+      "cardId": "2040100150",
+      "source": "shinycolors.moe"
     },
     "produce_events/301002201": {
       "eventType": "produce_events",
       "eventId": "301002201",
       "storyTitle": "『カット』でもあるもの",
-      "source": "sc-viewer.top/name"
+      "cardName": "【クライマックス↑↓大貧民】園田智代子",
+      "cardId": "2040100150",
+      "source": "shinycolors.moe"
     },
     "produce_events/301002003": {
       "eventType": "produce_events",
       "eventId": "301002003",
       "storyTitle": "バラバラ！",
-      "source": "sc-viewer.top/name"
+      "cardName": "【リアルラックにお願い☆★】園田智代子",
+      "cardId": "2040100140",
+      "source": "shinycolors.moe"
     },
     "produce_events/301002002": {
       "eventType": "produce_events",
       "eventId": "301002002",
       "storyTitle": "放クラ流・開封の儀",
-      "source": "sc-viewer.top/name"
+      "cardName": "【リアルラックにお願い☆★】園田智代子",
+      "cardId": "2040100140",
+      "source": "shinycolors.moe"
     },
     "produce_events/301002001": {
       "eventType": "produce_events",
       "eventId": "301002001",
       "storyTitle": "コンビニ哨戒作戦",
-      "source": "sc-viewer.top/name"
+      "cardName": "【リアルラックにお願い☆★】園田智代子",
+      "cardId": "2040100140",
+      "source": "shinycolors.moe"
     },
     "produce_events/301001902": {
       "eventType": "produce_events",
       "eventId": "301001902",
       "storyTitle": "このLIVE！は終了しました",
-      "source": "sc-viewer.top/name"
+      "cardName": "【ちょこほりっく♡注意報】園田智代子",
+      "cardId": "2040100120",
+      "source": "shinycolors.moe"
     },
     "produce_events/301001901": {
       "eventType": "produce_events",
       "eventId": "301001901",
       "storyTitle": "●LIVE！",
-      "source": "sc-viewer.top/name"
+      "cardName": "【ちょこほりっく♡注意報】園田智代子",
+      "cardId": "2040100120",
+      "source": "shinycolors.moe"
     },
     "produce_events/301001703": {
       "eventType": "produce_events",
       "eventId": "301001703",
       "storyTitle": "放クラガード",
-      "source": "sc-viewer.top/name"
+      "cardName": "【歪-twst-罅割-brk】園田智代子",
+      "cardId": "2040100100",
+      "source": "shinycolors.moe"
     },
     "produce_events/301001702": {
       "eventType": "produce_events",
       "eventId": "301001702",
       "storyTitle": "戻んのか！？",
-      "source": "sc-viewer.top/name"
+      "cardName": "【歪-twst-罅割-brk】園田智代子",
+      "cardId": "2040100100",
+      "source": "shinycolors.moe"
     },
     "produce_events/301001701": {
       "eventType": "produce_events",
       "eventId": "301001701",
       "storyTitle": "隕励＞縺溘↑繧画ｬ｡縺ｮ縺医＆",
-      "source": "sc-viewer.top/name"
+      "cardName": "【歪-twst-罅割-brk】園田智代子",
+      "cardId": "2040100100",
+      "source": "shinycolors.moe"
     },
     "produce_events/301001602": {
       "eventType": "produce_events",
       "eventId": "301001602",
       "storyTitle": "彼女は知らない天性の、",
-      "source": "sc-viewer.top/name"
+      "cardName": "【chocolate next door】園田智代子",
+      "cardId": "2040100090",
+      "source": "shinycolors.moe"
     },
     "produce_events/301001601": {
       "eventType": "produce_events",
       "eventId": "301001601",
       "storyTitle": "ささやかだけど最初から",
-      "source": "sc-viewer.top/name"
+      "cardName": "【chocolate next door】園田智代子",
+      "cardId": "2040100090",
+      "source": "shinycolors.moe"
     },
     "produce_events/301001503": {
       "eventType": "produce_events",
       "eventId": "301001503",
       "storyTitle": "正・もちもち",
-      "source": "sc-viewer.top/name"
+      "cardName": "【◎もちもちよこ◎】園田智代子",
+      "cardId": "2040100080",
+      "source": "shinycolors.moe"
     },
     "produce_events/301001502": {
       "eventType": "produce_events",
       "eventId": "301001502",
       "storyTitle": "すれ違い受信",
-      "source": "sc-viewer.top/name"
+      "cardName": "【◎もちもちよこ◎】園田智代子",
+      "cardId": "2040100080",
+      "source": "shinycolors.moe"
     },
     "produce_events/301001501": {
       "eventType": "produce_events",
       "eventId": "301001501",
       "storyTitle": "もちもちとは",
-      "source": "sc-viewer.top/name"
+      "cardName": "【◎もちもちよこ◎】園田智代子",
+      "cardId": "2040100080",
+      "source": "shinycolors.moe"
     },
     "produce_events/301001303": {
       "eventType": "produce_events",
       "eventId": "301001303",
       "storyTitle": "よくある感じの土曜の夜",
-      "source": "sc-viewer.top/name"
+      "cardName": "【生彩トラベリング】園田智代子",
+      "cardId": "2040100070",
+      "source": "shinycolors.moe"
     },
     "produce_events/301001302": {
       "eventType": "produce_events",
       "eventId": "301001302",
       "storyTitle": "白虎持ち帰り選抜面接",
-      "source": "sc-viewer.top/name"
+      "cardName": "【生彩トラベリング】園田智代子",
+      "cardId": "2040100070",
+      "source": "shinycolors.moe"
     },
     "produce_events/301001301": {
       "eventType": "produce_events",
       "eventId": "301001301",
       "storyTitle": "アニマル×ドライブ",
-      "source": "sc-viewer.top/name"
+      "cardName": "【生彩トラベリング】園田智代子",
+      "cardId": "2040100070",
+      "source": "shinycolors.moe"
     },
     "produce_events/301001203": {
       "eventType": "produce_events",
       "eventId": "301001203",
       "storyTitle": "お休みだってフルパワー",
-      "source": "sc-viewer.top/name"
+      "cardName": "【code:SH☆☆TING star!】園田智代子",
+      "cardId": "2040100060",
+      "source": "shinycolors.moe"
     },
     "produce_events/301001202": {
       "eventType": "produce_events",
       "eventId": "301001202",
       "storyTitle": "THE CLIMAX GIRLS",
-      "source": "sc-viewer.top/name"
+      "cardName": "【code:SH☆☆TING star!】園田智代子",
+      "cardId": "2040100060",
+      "source": "shinycolors.moe"
     },
     "produce_events/301001201": {
       "eventType": "produce_events",
       "eventId": "301001201",
       "storyTitle": "Like a 主人公！",
-      "source": "sc-viewer.top/name"
+      "cardName": "【code:SH☆☆TING star!】園田智代子",
+      "cardId": "2040100060",
+      "source": "shinycolors.moe"
     },
     "produce_events/301001103": {
       "eventType": "produce_events",
       "eventId": "301001103",
       "storyTitle": "第♡話",
-      "source": "sc-viewer.top/name"
+      "cardName": "【kimagure全力ビート！】園田智代子",
+      "cardId": "2040100050",
+      "source": "shinycolors.moe"
     },
     "produce_events/301001102": {
       "eventType": "produce_events",
       "eventId": "301001102",
       "storyTitle": "第☆話",
-      "source": "sc-viewer.top/name"
+      "cardName": "【kimagure全力ビート！】園田智代子",
+      "cardId": "2040100050",
+      "source": "shinycolors.moe"
     },
     "produce_events/301001101": {
       "eventType": "produce_events",
       "eventId": "301001101",
       "storyTitle": "第◇話",
-      "source": "sc-viewer.top/name"
+      "cardName": "【kimagure全力ビート！】園田智代子",
+      "cardId": "2040100050",
+      "source": "shinycolors.moe"
     },
     "produce_events/301001003": {
       "eventType": "produce_events",
       "eventId": "301001003",
       "storyTitle": "定番は外しました",
-      "source": "sc-viewer.top/name"
+      "cardName": "【おあがり←くらいまっくす】園田智代子",
+      "cardId": "2040100040",
+      "source": "shinycolors.moe"
     },
     "produce_events/301001002": {
       "eventType": "produce_events",
       "eventId": "301001002",
       "storyTitle": "放っておいたら２時間はカタい",
-      "source": "sc-viewer.top/name"
+      "cardName": "【おあがり←くらいまっくす】園田智代子",
+      "cardId": "2040100040",
+      "source": "shinycolors.moe"
     },
     "produce_events/301001001": {
       "eventType": "produce_events",
       "eventId": "301001001",
       "storyTitle": "おとぎ話には誘われない",
-      "source": "sc-viewer.top/name"
+      "cardName": "【おあがり←くらいまっくす】園田智代子",
+      "cardId": "2040100040",
+      "source": "shinycolors.moe"
     },
     "produce_events/301000703": {
       "eventType": "produce_events",
       "eventId": "301000703",
       "storyTitle": "『ちよカメ』スタートです！",
-      "source": "sc-viewer.top/name"
+      "cardName": "【紅蘭偉魔空珠に挑め！】園田智代子",
+      "cardId": "2040100030",
+      "source": "shinycolors.moe"
     },
     "produce_events/301000702": {
       "eventType": "produce_events",
       "eventId": "301000702",
       "storyTitle": "応えないのは嘘になるでしょ？",
-      "source": "sc-viewer.top/name"
+      "cardName": "【紅蘭偉魔空珠に挑め！】園田智代子",
+      "cardId": "2040100030",
+      "source": "shinycolors.moe"
     },
     "produce_events/301000701": {
       "eventType": "produce_events",
       "eventId": "301000701",
       "storyTitle": "──不良！？",
-      "source": "sc-viewer.top/name"
+      "cardName": "【紅蘭偉魔空珠に挑め！】園田智代子",
+      "cardId": "2040100030",
+      "source": "shinycolors.moe"
     },
     "produce_events/301000404": {
       "eventType": "produce_events",
       "eventId": "301000404",
       "storyTitle": "お花見の代わりに",
-      "source": "sc-viewer.top/name"
+      "cardName": "【桜餅マスター……？】園田智代子",
+      "cardId": "2040100020",
+      "source": "shinycolors.moe"
     },
     "produce_events/301000403": {
       "eventType": "produce_events",
       "eventId": "301000403",
       "storyTitle": "チョコは万能……？",
-      "source": "sc-viewer.top/name"
+      "cardName": "【桜餅マスター……？】園田智代子",
+      "cardId": "2040100020",
+      "source": "shinycolors.moe"
     },
     "produce_events/301000402": {
       "eventType": "produce_events",
       "eventId": "301000402",
       "storyTitle": "桜色ショッピング",
-      "source": "sc-viewer.top/name"
+      "cardName": "【桜餅マスター……？】園田智代子",
+      "cardId": "2040100020",
+      "source": "shinycolors.moe"
     },
     "produce_events/301000401": {
       "eventType": "produce_events",
       "eventId": "301000401",
       "storyTitle": "花より団子、桜より餅",
-      "source": "sc-viewer.top/name"
+      "cardName": "【桜餅マスター……？】園田智代子",
+      "cardId": "2040100020",
+      "source": "shinycolors.moe"
     },
     "produce_events/301000504": {
       "eventType": "produce_events",
       "eventId": "301000504",
       "storyTitle": "その幽霊さんは大切な友達です",
-      "source": "sc-viewer.top/name"
+      "cardName": "【放課後★肝試しパニック】園田智代子",
+      "cardId": "2040100010",
+      "source": "shinycolors.moe"
     },
     "produce_events/301000503": {
       "eventType": "produce_events",
       "eventId": "301000503",
       "storyTitle": "暗がり事務所で大冒険？",
-      "source": "sc-viewer.top/name"
+      "cardName": "【放課後★肝試しパニック】園田智代子",
+      "cardId": "2040100010",
+      "source": "shinycolors.moe"
     },
     "produce_events/301000502": {
       "eventType": "produce_events",
       "eventId": "301000502",
       "storyTitle": "肝試し・延長戦",
-      "source": "sc-viewer.top/name"
+      "cardName": "【放課後★肝試しパニック】園田智代子",
+      "cardId": "2040100010",
+      "source": "shinycolors.moe"
     },
     "produce_events/301000501": {
       "eventType": "produce_events",
       "eventId": "301000501",
       "storyTitle": "恐怖は心を縮めるらしい",
-      "source": "sc-viewer.top/name"
+      "cardName": "【放課後★肝試しパニック】園田智代子",
+      "cardId": "2040100010",
+      "source": "shinycolors.moe"
     },
     "produce_events/300902601": {
       "eventType": "produce_events",
@@ -34569,247 +34809,329 @@
       "eventType": "produce_events",
       "eventId": "300202802",
       "storyTitle": "感謝で満たして",
-      "source": "sc-viewer.top/name"
+      "cardName": "【囲む実り】風野灯織",
+      "cardId": "2040020210",
+      "source": "shinycolors.moe"
     },
     "produce_events/300202801": {
       "eventType": "produce_events",
       "eventId": "300202801",
       "storyTitle": "山盛りの心遣い",
-      "source": "sc-viewer.top/name"
+      "cardName": "【囲む実り】風野灯織",
+      "cardId": "2040020210",
+      "source": "shinycolors.moe"
     },
     "produce_events/300202701": {
       "eventType": "produce_events",
       "eventId": "300202701",
       "storyTitle": "反応に困るほどの",
-      "source": "sc-viewer.top/name"
+      "cardName": "【言葉にならないサプライズ】風野灯織",
+      "cardId": "2040020200",
+      "source": "shinycolors.moe"
     },
     "produce_events/300202601": {
       "eventType": "produce_events",
       "eventId": "300202601",
       "storyTitle": "朝、ご主人様と",
-      "source": "sc-viewer.top/name"
+      "cardName": "【ひとりと一匹ワンルーム】風野灯織",
+      "cardId": "2040020180",
+      "source": "shinycolors.moe"
     },
     "produce_events/300202502": {
       "eventType": "produce_events",
       "eventId": "300202502",
       "storyTitle": "空に、星座ひとつ",
-      "source": "sc-viewer.top/name"
+      "cardName": "【天に寂寥】風野灯織",
+      "cardId": "2040020160",
+      "source": "shinycolors.moe"
     },
     "produce_events/300202501": {
       "eventType": "produce_events",
       "eventId": "300202501",
       "storyTitle": "ハンドメイド・リトルワールド",
-      "source": "sc-viewer.top/name"
+      "cardName": "【天に寂寥】風野灯織",
+      "cardId": "2040020160",
+      "source": "shinycolors.moe"
     },
     "produce_events/300202401": {
       "eventType": "produce_events",
       "eventId": "300202401",
       "storyTitle": "探して、見つけて",
-      "source": "sc-viewer.top/name"
+      "cardName": "【円環 -Halo around-】風野灯織",
+      "cardId": "2040020150",
+      "source": "shinycolors.moe"
     },
     "produce_events/300202203": {
       "eventType": "produce_events",
       "eventId": "300202203",
       "storyTitle": "Not yet",
-      "source": "sc-viewer.top/name"
+      "cardName": "【レンズの先に見えたもの】風野灯織",
+      "cardId": "2040020130",
+      "source": "shinycolors.moe"
     },
     "produce_events/300202202": {
       "eventType": "produce_events",
       "eventId": "300202202",
       "storyTitle": "Past or future",
-      "source": "sc-viewer.top/name"
+      "cardName": "【レンズの先に見えたもの】風野灯織",
+      "cardId": "2040020130",
+      "source": "shinycolors.moe"
     },
     "produce_events/300202201": {
       "eventType": "produce_events",
       "eventId": "300202201",
       "storyTitle": "Right now",
-      "source": "sc-viewer.top/name"
+      "cardName": "【レンズの先に見えたもの】風野灯織",
+      "cardId": "2040020130",
+      "source": "shinycolors.moe"
     },
     "produce_events/300202102": {
       "eventType": "produce_events",
       "eventId": "300202102",
       "storyTitle": "きらめくひとかけら",
-      "source": "sc-viewer.top/name"
+      "cardName": "【守って！スターリー☆ナイト】風野灯織",
+      "cardId": "2040020120",
+      "source": "shinycolors.moe"
     },
     "produce_events/300202101": {
       "eventType": "produce_events",
       "eventId": "300202101",
       "storyTitle": "見習い魔法使いは今日も",
-      "source": "sc-viewer.top/name"
+      "cardName": "【守って！スターリー☆ナイト】風野灯織",
+      "cardId": "2040020120",
+      "source": "shinycolors.moe"
     },
     "produce_events/300201803": {
       "eventType": "produce_events",
       "eventId": "300201803",
       "storyTitle": "夜は長くて短い",
-      "source": "sc-viewer.top/name"
+      "cardName": "【ふたりといる夜のこと】風野灯織",
+      "cardId": "2040020100",
+      "source": "shinycolors.moe"
     },
     "produce_events/300201802": {
       "eventType": "produce_events",
       "eventId": "300201802",
       "storyTitle": "ある公演の夜の話",
-      "source": "sc-viewer.top/name"
+      "cardName": "【ふたりといる夜のこと】風野灯織",
+      "cardId": "2040020100",
+      "source": "shinycolors.moe"
     },
     "produce_events/300201801": {
       "eventType": "produce_events",
       "eventId": "300201801",
       "storyTitle": "今はこんな夜もあって",
-      "source": "sc-viewer.top/name"
+      "cardName": "【ふたりといる夜のこと】風野灯織",
+      "cardId": "2040020100",
+      "source": "shinycolors.moe"
     },
     "produce_events/300201703": {
       "eventType": "produce_events",
       "eventId": "300201703",
       "storyTitle": "強くなった",
-      "source": "sc-viewer.top/name"
+      "cardName": "【Can't give up】風野灯織",
+      "cardId": "2040020090",
+      "source": "shinycolors.moe"
     },
     "produce_events/300201702": {
       "eventType": "produce_events",
       "eventId": "300201702",
       "storyTitle": "少しでも強く",
-      "source": "sc-viewer.top/name"
+      "cardName": "【Can't give up】風野灯織",
+      "cardId": "2040020090",
+      "source": "shinycolors.moe"
     },
     "produce_events/300201701": {
       "eventType": "produce_events",
       "eventId": "300201701",
       "storyTitle": "強くなる",
-      "source": "sc-viewer.top/name"
+      "cardName": "【Can't give up】風野灯織",
+      "cardId": "2040020090",
+      "source": "shinycolors.moe"
     },
     "produce_events/300201602": {
       "eventType": "produce_events",
       "eventId": "300201602",
       "storyTitle": "オン",
-      "source": "sc-viewer.top/name"
+      "cardName": "【WtoW】風野灯織",
+      "cardId": "2040020080",
+      "source": "shinycolors.moe"
     },
     "produce_events/300201601": {
       "eventType": "produce_events",
       "eventId": "300201601",
       "storyTitle": "イルミネ間取引",
-      "source": "sc-viewer.top/name"
+      "cardName": "【WtoW】風野灯織",
+      "cardId": "2040020080",
+      "source": "shinycolors.moe"
     },
     "produce_events/300201503": {
       "eventType": "produce_events",
       "eventId": "300201503",
       "storyTitle": "⇔L5",
-      "source": "sc-viewer.top/name"
+      "cardName": "【永遠の方程式】風野灯織",
+      "cardId": "2040020070",
+      "source": "shinycolors.moe"
     },
     "produce_events/300201502": {
       "eventType": "produce_events",
       "eventId": "300201502",
       "storyTitle": "⇔L4",
-      "source": "sc-viewer.top/name"
+      "cardName": "【永遠の方程式】風野灯織",
+      "cardId": "2040020070",
+      "source": "shinycolors.moe"
     },
     "produce_events/300201501": {
       "eventType": "produce_events",
       "eventId": "300201501",
       "storyTitle": "トライアングル（正）",
-      "source": "sc-viewer.top/name"
+      "cardName": "【永遠の方程式】風野灯織",
+      "cardId": "2040020070",
+      "source": "shinycolors.moe"
     },
     "produce_events/300201303": {
       "eventType": "produce_events",
       "eventId": "300201303",
       "storyTitle": "魚の口になっちゃってる",
-      "source": "sc-viewer.top/name"
+      "cardName": "【水面を仰いで海の底】風野灯織",
+      "cardId": "2040020060",
+      "source": "shinycolors.moe"
     },
     "produce_events/300201302": {
       "eventType": "produce_events",
       "eventId": "300201302",
       "storyTitle": "あれって目じゃなかったんだ",
-      "source": "sc-viewer.top/name"
+      "cardName": "【水面を仰いで海の底】風野灯織",
+      "cardId": "2040020060",
+      "source": "shinycolors.moe"
     },
     "produce_events/300201301": {
       "eventType": "produce_events",
       "eventId": "300201301",
       "storyTitle": "ふたりの耳を貸してほしい",
-      "source": "sc-viewer.top/name"
+      "cardName": "【水面を仰いで海の底】風野灯織",
+      "cardId": "2040020060",
+      "source": "shinycolors.moe"
     },
     "produce_events/300201203": {
       "eventType": "produce_events",
       "eventId": "300201203",
       "storyTitle": "たわいのない会話",
-      "source": "sc-viewer.top/name"
+      "cardName": "【宝石色のしおり】風野灯織",
+      "cardId": "2040020050",
+      "source": "shinycolors.moe"
     },
     "produce_events/300201202": {
       "eventType": "produce_events",
       "eventId": "300201202",
       "storyTitle": "ただの石ころ",
-      "source": "sc-viewer.top/name"
+      "cardName": "【宝石色のしおり】風野灯織",
+      "cardId": "2040020050",
+      "source": "shinycolors.moe"
     },
     "produce_events/300201201": {
       "eventType": "produce_events",
       "eventId": "300201201",
       "storyTitle": "ただの卵焼き",
-      "source": "sc-viewer.top/name"
+      "cardName": "【宝石色のしおり】風野灯織",
+      "cardId": "2040020050",
+      "source": "shinycolors.moe"
     },
     "produce_events/300201003": {
       "eventType": "produce_events",
       "eventId": "300201003",
       "storyTitle": "そのこころを",
-      "source": "sc-viewer.top/name"
+      "cardName": "【星掬い藍仰ぐ】風野灯織",
+      "cardId": "2040020040",
+      "source": "shinycolors.moe"
     },
     "produce_events/300201002": {
       "eventType": "produce_events",
       "eventId": "300201002",
       "storyTitle": "気付いてほしい",
-      "source": "sc-viewer.top/name"
+      "cardName": "【星掬い藍仰ぐ】風野灯織",
+      "cardId": "2040020040",
+      "source": "shinycolors.moe"
     },
     "produce_events/300201001": {
       "eventType": "produce_events",
       "eventId": "300201001",
       "storyTitle": "気付かないはずがない",
-      "source": "sc-viewer.top/name"
+      "cardName": "【星掬い藍仰ぐ】風野灯織",
+      "cardId": "2040020040",
+      "source": "shinycolors.moe"
     },
     "produce_events/300200803": {
       "eventType": "produce_events",
       "eventId": "300200803",
       "storyTitle": "桜黄の星に願うこと",
-      "source": "sc-viewer.top/name"
+      "cardName": "【星合アステリズム】風野灯織",
+      "cardId": "2040020030",
+      "source": "shinycolors.moe"
     },
     "produce_events/300200802": {
       "eventType": "produce_events",
       "eventId": "300200802",
       "storyTitle": "青い短冊に願いごと",
-      "source": "sc-viewer.top/name"
+      "cardName": "【星合アステリズム】風野灯織",
+      "cardId": "2040020030",
+      "source": "shinycolors.moe"
     },
     "produce_events/300200801": {
       "eventType": "produce_events",
       "eventId": "300200801",
       "storyTitle": "今の私ができること",
-      "source": "sc-viewer.top/name"
+      "cardName": "【星合アステリズム】風野灯織",
+      "cardId": "2040020030",
+      "source": "shinycolors.moe"
     },
     "produce_events/300200703": {
       "eventType": "produce_events",
       "eventId": "300200703",
       "storyTitle": "ミルクティーの体温",
-      "source": "sc-viewer.top/name"
+      "cardName": "【風野署長の一日勤務回想録】風野灯織",
+      "cardId": "2040020020",
+      "source": "shinycolors.moe"
     },
     "produce_events/300200702": {
       "eventType": "produce_events",
       "eventId": "300200702",
       "storyTitle": "Q＆A・トレイン",
-      "source": "sc-viewer.top/name"
+      "cardName": "【風野署長の一日勤務回想録】風野灯織",
+      "cardId": "2040020020",
+      "source": "shinycolors.moe"
     },
     "produce_events/300200701": {
       "eventType": "produce_events",
       "eventId": "300200701",
       "storyTitle": "取りたい満点",
-      "source": "sc-viewer.top/name"
+      "cardName": "【風野署長の一日勤務回想録】風野灯織",
+      "cardId": "2040020020",
+      "source": "shinycolors.moe"
     },
     "produce_events/300200503": {
       "eventType": "produce_events",
       "eventId": "300200503",
       "storyTitle": "お返しには甘さを添えて",
-      "source": "sc-viewer.top/name"
+      "cardName": "【みんなと結んだもの】風野灯織",
+      "cardId": "2040020010",
+      "source": "shinycolors.moe"
     },
     "produce_events/300200502": {
       "eventType": "produce_events",
       "eventId": "300200502",
       "storyTitle": "幸運の彩りを繋いで",
-      "source": "sc-viewer.top/name"
+      "cardName": "【みんなと結んだもの】風野灯織",
+      "cardId": "2040020010",
+      "source": "shinycolors.moe"
     },
     "produce_events/300200501": {
       "eventType": "produce_events",
       "eventId": "300200501",
       "storyTitle": "不安と安心と",
-      "source": "sc-viewer.top/name"
+      "cardName": "【みんなと結んだもの】風野灯織",
+      "cardId": "2040020010",
+      "source": "shinycolors.moe"
     },
     "produce_events/300102801": {
       "eventType": "produce_events",
@@ -35205,25 +35527,33 @@
       "eventType": "produce_events",
       "eventId": "302501902",
       "storyTitle": "mug break",
-      "source": "sc-viewer.top/name"
+      "cardName": "【OBLIVION】緋田美琴",
+      "cardId": "2030250040",
+      "source": "shinycolors.moe"
     },
     "produce_events/302501901": {
       "eventType": "produce_events",
       "eventId": "302501901",
       "storyTitle": "mug shot",
-      "source": "sc-viewer.top/name"
+      "cardName": "【OBLIVION】緋田美琴",
+      "cardId": "2030250040",
+      "source": "shinycolors.moe"
     },
     "produce_events/302500502": {
       "eventType": "produce_events",
       "eventId": "302500502",
       "storyTitle": "dizzy",
-      "source": "sc-viewer.top/name"
+      "cardName": "【FEEL】緋田美琴",
+      "cardId": "2030250010",
+      "source": "shinycolors.moe"
     },
     "produce_events/302500501": {
       "eventType": "produce_events",
       "eventId": "302500501",
       "storyTitle": "pain",
-      "source": "sc-viewer.top/name"
+      "cardName": "【FEEL】緋田美琴",
+      "cardId": "2030250010",
+      "source": "shinycolors.moe"
     },
     "produce_events/302401802": {
       "eventType": "produce_events",
@@ -35553,61 +35883,81 @@
       "eventType": "produce_events",
       "eventId": "301901802",
       "storyTitle": "自分なりの方法で！",
-      "source": "sc-viewer.top/name"
+      "cardName": "【あたし流・かわいい】和泉愛依",
+      "cardId": "2030190080",
+      "source": "shinycolors.moe"
     },
     "produce_events/301901801": {
       "eventType": "produce_events",
       "eventId": "301901801",
       "storyTitle": "『可愛い』クイーン♪",
-      "source": "sc-viewer.top/name"
+      "cardName": "【あたし流・かわいい】和泉愛依",
+      "cardId": "2030190080",
+      "source": "shinycolors.moe"
     },
     "produce_events/301901402": {
       "eventType": "produce_events",
       "eventId": "301901402",
       "storyTitle": "うつっちゃった！？",
-      "source": "sc-viewer.top/name"
+      "cardName": "【志道の覚悟】和泉愛依",
+      "cardId": "2030190050",
+      "source": "shinycolors.moe"
     },
     "produce_events/301901401": {
       "eventType": "produce_events",
       "eventId": "301901401",
       "storyTitle": "な、泣ける～～！",
-      "source": "sc-viewer.top/name"
+      "cardName": "【志道の覚悟】和泉愛依",
+      "cardId": "2030190050",
+      "source": "shinycolors.moe"
     },
     "produce_events/301900902": {
       "eventType": "produce_events",
       "eventId": "301900902",
       "storyTitle": "見て！！",
-      "source": "sc-viewer.top/name"
+      "cardName": "【イケてた！？】和泉愛依",
+      "cardId": "2030190030",
+      "source": "shinycolors.moe"
     },
     "produce_events/301900901": {
       "eventType": "produce_events",
       "eventId": "301900901",
       "storyTitle": "イケメンって……？",
-      "source": "sc-viewer.top/name"
+      "cardName": "【イケてた！？】和泉愛依",
+      "cardId": "2030190030",
+      "source": "shinycolors.moe"
     },
     "produce_events/301900602": {
       "eventType": "produce_events",
       "eventId": "301900602",
       "storyTitle": "もっと美味しくなるっしょ♪",
-      "source": "sc-viewer.top/name"
+      "cardName": "【＋『α』】和泉愛依",
+      "cardId": "2030190020",
+      "source": "shinycolors.moe"
     },
     "produce_events/301900601": {
       "eventType": "produce_events",
       "eventId": "301900601",
       "storyTitle": "パン、美味しい！",
-      "source": "sc-viewer.top/name"
+      "cardName": "【＋『α』】和泉愛依",
+      "cardId": "2030190020",
+      "source": "shinycolors.moe"
     },
     "produce_events/301900302": {
       "eventType": "produce_events",
       "eventId": "301900302",
       "storyTitle": "想い、筆に込めて",
-      "source": "sc-viewer.top/name"
+      "cardName": "【和泉流・書道心得】和泉愛依",
+      "cardId": "2030190010",
+      "source": "shinycolors.moe"
     },
     "produce_events/301900301": {
       "eventType": "produce_events",
       "eventId": "301900301",
       "storyTitle": "トメ　ハネ　雑　だめ",
-      "source": "sc-viewer.top/name"
+      "cardName": "【和泉流・書道心得】和泉愛依",
+      "cardId": "2030190010",
+      "source": "shinycolors.moe"
     },
     "produce_events/301801602": {
       "eventType": "produce_events",
@@ -36309,103 +36659,137 @@
       "eventType": "produce_events",
       "eventId": "301002402",
       "storyTitle": "厳密に言うとキョンシーではない",
-      "source": "sc-viewer.top/name"
+      "cardName": "【怖怖レイトナイト】園田智代子",
+      "cardId": "2030100130",
+      "source": "shinycolors.moe"
     },
     "produce_events/301002401": {
       "eventType": "produce_events",
       "eventId": "301002401",
       "storyTitle": "後ろまたは上",
-      "source": "sc-viewer.top/name"
+      "cardName": "【怖怖レイトナイト】園田智代子",
+      "cardId": "2030100130",
+      "source": "shinycolors.moe"
     },
     "produce_events/301002102": {
       "eventType": "produce_events",
       "eventId": "301002102",
       "storyTitle": "キュッ",
-      "source": "sc-viewer.top/name"
+      "cardName": "【キス♡ミーなんて！？】園田智代子",
+      "cardId": "2030100100",
+      "source": "shinycolors.moe"
     },
     "produce_events/301002101": {
       "eventType": "produce_events",
       "eventId": "301002101",
       "storyTitle": "きゅん",
-      "source": "sc-viewer.top/name"
+      "cardName": "【キス♡ミーなんて！？】園田智代子",
+      "cardId": "2030100100",
+      "source": "shinycolors.moe"
     },
     "produce_events/301001802": {
       "eventType": "produce_events",
       "eventId": "301001802",
       "storyTitle": "無縁・お嬢さん",
-      "source": "sc-viewer.top/name"
+      "cardName": "【ラフ？ガール】園田智代子",
+      "cardId": "2030100060",
+      "source": "shinycolors.moe"
     },
     "produce_events/301001801": {
       "eventType": "produce_events",
       "eventId": "301001801",
       "storyTitle": "rough, laugh, ラフ",
-      "source": "sc-viewer.top/name"
+      "cardName": "【ラフ？ガール】園田智代子",
+      "cardId": "2030100060",
+      "source": "shinycolors.moe"
     },
     "produce_events/301001402": {
       "eventType": "produce_events",
       "eventId": "301001402",
       "storyTitle": "good time",
-      "source": "sc-viewer.top/name"
+      "cardName": "【NEON♥ICE】園田智代子",
+      "cardId": "2030100050",
+      "source": "shinycolors.moe"
     },
     "produce_events/301001401": {
       "eventType": "produce_events",
       "eventId": "301001401",
       "storyTitle": "bad hours...?",
-      "source": "sc-viewer.top/name"
+      "cardName": "【NEON♥ICE】園田智代子",
+      "cardId": "2030100050",
+      "source": "shinycolors.moe"
     },
     "produce_events/301000902": {
       "eventType": "produce_events",
       "eventId": "301000902",
       "storyTitle": "あったかくなりました！",
-      "source": "sc-viewer.top/name"
+      "cardName": "【ぐるもこ・まふ×２】園田智代子",
+      "cardId": "2030100040",
+      "source": "shinycolors.moe"
     },
     "produce_events/301000901": {
       "eventType": "produce_events",
       "eventId": "301000901",
       "storyTitle": "あったかくしましょう",
-      "source": "sc-viewer.top/name"
+      "cardName": "【ぐるもこ・まふ×２】園田智代子",
+      "cardId": "2030100040",
+      "source": "shinycolors.moe"
     },
     "produce_events/301000802": {
       "eventType": "produce_events",
       "eventId": "301000802",
       "storyTitle": "赤→桃のコード",
-      "source": "sc-viewer.top/name"
+      "cardName": "【Best☆Great☆サマー！】園田智代子",
+      "cardId": "2030100030",
+      "source": "shinycolors.moe"
     },
     "produce_events/301000801": {
       "eventType": "produce_events",
       "eventId": "301000801",
       "storyTitle": "イマジナリーサマー",
-      "source": "sc-viewer.top/name"
+      "cardName": "【Best☆Great☆サマー！】園田智代子",
+      "cardId": "2030100030",
+      "source": "shinycolors.moe"
     },
     "produce_events/301000602": {
       "eventType": "produce_events",
       "eventId": "301000602",
       "storyTitle": "ハローハロー、始めましょう！",
-      "source": "sc-viewer.top/name"
+      "cardName": "【茜色セレンディピティ】園田智代子",
+      "cardId": "2030100020",
+      "source": "shinycolors.moe"
     },
     "produce_events/301000601": {
       "eventType": "produce_events",
       "eventId": "301000601",
       "storyTitle": "何度だってリピート",
-      "source": "sc-viewer.top/name"
+      "cardName": "【茜色セレンディピティ】園田智代子",
+      "cardId": "2030100020",
+      "source": "shinycolors.moe"
     },
     "produce_events/301000303": {
       "eventType": "produce_events",
       "eventId": "301000303",
       "storyTitle": "私について",
-      "source": "sc-viewer.top/name"
+      "cardName": "【迷走チョコロード】園田智代子",
+      "cardId": "2030100010",
+      "source": "shinycolors.moe"
     },
     "produce_events/301000302": {
       "eventType": "produce_events",
       "eventId": "301000302",
       "storyTitle": "待ってるだけじゃダメ",
-      "source": "sc-viewer.top/name"
+      "cardName": "【迷走チョコロード】園田智代子",
+      "cardId": "2030100010",
+      "source": "shinycolors.moe"
     },
     "produce_events/301000301": {
       "eventType": "produce_events",
       "eventId": "301000301",
       "storyTitle": "普通の女子高生？",
-      "source": "sc-viewer.top/name"
+      "cardName": "【迷走チョコロード】園田智代子",
+      "cardId": "2030100010",
+      "source": "shinycolors.moe"
     },
     "produce_events/300902402": {
       "eventType": "produce_events",
@@ -37089,109 +37473,145 @@
       "eventType": "produce_events",
       "eventId": "300202302",
       "storyTitle": "オネガイを叶えて",
-      "source": "sc-viewer.top/name"
+      "cardName": "【優雅に願いをかけて】風野灯織",
+      "cardId": "2030020130",
+      "source": "shinycolors.moe"
     },
     "produce_events/300202301": {
       "eventType": "produce_events",
       "eventId": "300202301",
       "storyTitle": "オマジナイをかけて",
-      "source": "sc-viewer.top/name"
+      "cardName": "【優雅に願いをかけて】風野灯織",
+      "cardId": "2030020130",
+      "source": "shinycolors.moe"
     },
     "produce_events/300201902": {
       "eventType": "produce_events",
       "eventId": "300201902",
       "storyTitle": "隠し味の正体",
-      "source": "sc-viewer.top/name"
+      "cardName": "【混ぜ込む気持ち】風野灯織",
+      "cardId": "2030020090",
+      "source": "shinycolors.moe"
     },
     "produce_events/300201901": {
       "eventType": "produce_events",
       "eventId": "300201901",
       "storyTitle": "ドキドキはたくさん",
-      "source": "sc-viewer.top/name"
+      "cardName": "【混ぜ込む気持ち】風野灯織",
+      "cardId": "2030020090",
+      "source": "shinycolors.moe"
     },
     "produce_events/300201402": {
       "eventType": "produce_events",
       "eventId": "300201402",
       "storyTitle": "今も変わらない話",
-      "source": "sc-viewer.top/name"
+      "cardName": "【幾星霜の先に】風野灯織",
+      "cardId": "2030020060",
+      "source": "shinycolors.moe"
     },
     "produce_events/300201401": {
       "eventType": "produce_events",
       "eventId": "300201401",
       "storyTitle": "今は言える話",
-      "source": "sc-viewer.top/name"
+      "cardName": "【幾星霜の先に】風野灯織",
+      "cardId": "2030020060",
+      "source": "shinycolors.moe"
     },
     "produce_events/300201102": {
       "eventType": "produce_events",
       "eventId": "300201102",
       "storyTitle": "３人、一緒がいい",
-      "source": "sc-viewer.top/name"
+      "cardName": "【クローズ・トゥ・ユー】風野灯織",
+      "cardId": "2030020050",
+      "source": "shinycolors.moe"
     },
     "produce_events/300201101": {
       "eventType": "produce_events",
       "eventId": "300201101",
       "storyTitle": "にらめっこしましょ",
-      "source": "sc-viewer.top/name"
+      "cardName": "【クローズ・トゥ・ユー】風野灯織",
+      "cardId": "2030020050",
+      "source": "shinycolors.moe"
     },
     "produce_events/300200902": {
       "eventType": "produce_events",
       "eventId": "300200902",
       "storyTitle": "振り返ればほら、",
-      "source": "sc-viewer.top/name"
+      "cardName": "【RPGのススメ】風野灯織",
+      "cardId": "2030020040",
+      "source": "shinycolors.moe"
     },
     "produce_events/300200901": {
       "eventType": "produce_events",
       "eventId": "300200901",
       "storyTitle": "【実況】RPGのススメ Part.14",
-      "source": "sc-viewer.top/name"
+      "cardName": "【RPGのススメ】風野灯織",
+      "cardId": "2030020040",
+      "source": "shinycolors.moe"
     },
     "produce_events/300200602": {
       "eventType": "produce_events",
       "eventId": "300200602",
       "storyTitle": "鐘が鳴るその時までは……",
-      "source": "sc-viewer.top/name"
+      "cardName": "【魔法の階段を上って……】風野灯織",
+      "cardId": "2030020030",
+      "source": "shinycolors.moe"
     },
     "produce_events/300200601": {
       "eventType": "produce_events",
       "eventId": "300200601",
       "storyTitle": "夢見る少女のように",
-      "source": "sc-viewer.top/name"
+      "cardName": "【魔法の階段を上って……】風野灯織",
+      "cardId": "2030020030",
+      "source": "shinycolors.moe"
     },
     "produce_events/300200403": {
       "eventType": "produce_events",
       "eventId": "300200403",
       "storyTitle": "ひと時のおやすみ",
-      "source": "sc-viewer.top/name"
+      "cardName": "【遊び疲れて……】風野灯織",
+      "cardId": "2030020020",
+      "source": "shinycolors.moe"
     },
     "produce_events/300200402": {
       "eventType": "produce_events",
       "eventId": "300200402",
       "storyTitle": "忍耐と結果と",
-      "source": "sc-viewer.top/name"
+      "cardName": "【遊び疲れて……】風野灯織",
+      "cardId": "2030020020",
+      "source": "shinycolors.moe"
     },
     "produce_events/300200401": {
       "eventType": "produce_events",
       "eventId": "300200401",
       "storyTitle": "精一杯楽しむために",
-      "source": "sc-viewer.top/name"
+      "cardName": "【遊び疲れて……】風野灯織",
+      "cardId": "2030020020",
+      "source": "shinycolors.moe"
     },
     "produce_events/300200303": {
       "eventType": "produce_events",
       "eventId": "300200303",
       "storyTitle": "にぎやかな日常",
-      "source": "sc-viewer.top/name"
+      "cardName": "【克服の特訓】風野灯織",
+      "cardId": "2030020010",
+      "source": "shinycolors.moe"
     },
     "produce_events/300200302": {
       "eventType": "produce_events",
       "eventId": "300200302",
       "storyTitle": "めぐるのダンス教室",
-      "source": "sc-viewer.top/name"
+      "cardName": "【克服の特訓】風野灯織",
+      "cardId": "2030020010",
+      "source": "shinycolors.moe"
     },
     "produce_events/300200301": {
       "eventType": "produce_events",
       "eventId": "300200301",
       "storyTitle": "困難だって超えられる",
-      "source": "sc-viewer.top/name"
+      "cardName": "【克服の特訓】風野灯織",
+      "cardId": "2030020010",
+      "source": "shinycolors.moe"
     },
     "produce_events/300102302": {
       "eventType": "produce_events",

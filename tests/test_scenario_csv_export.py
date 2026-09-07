@@ -136,6 +136,8 @@ class ScenarioCsvExportTests(unittest.TestCase):
     def test_story_filename_rules(self) -> None:
         self.assertEqual(SERVER.csv_story_prefix("produce_events", "201002001"), "01")
         self.assertEqual(SERVER.csv_story_prefix("produce_events", "201002011"), "TE")
+        self.assertEqual(SERVER.csv_story_prefix("produce_events", "3000100101"), "01")
+        self.assertEqual(SERVER.csv_story_prefix("produce_events", "3000400107"), "07")
         self.assertEqual(SERVER.csv_story_prefix("game_event_communications", "400109501"), "序章")
         self.assertEqual(SERVER.csv_story_prefix("game_event_communications", "400109502"), "01")
         self.assertEqual(SERVER.csv_story_prefix("game_event_communications", "400109508"), "终章")
@@ -201,6 +203,24 @@ class ScenarioCsvExportTests(unittest.TestCase):
                 bundle.read(bundle.namelist()[0]).decode("utf-8-sig")
             )))
             self.assertEqual(first_rows[-1], ["译者", "煉金術式", "", ""])
+
+    def test_unit_produce_group_zip_is_numbered_and_named(self) -> None:
+        ids = [f"30001001{sequence:02d}" for sequence in range(1, 8)]
+        with patch.object(SERVER, "fetch_scenario_tracks", side_effect=lambda event_type, event_id: [
+            {"id": f"{event_id}001", "speaker": "テスト", "text": event_id},
+        ]), patch.object(SERVER, "resolve_scenario_metadata", side_effect=lambda event_type, event_id: {
+            "eventType": event_type,
+            "eventId": event_id,
+            "storyTitle": f"第{int(event_id[-2:])}話",
+        }):
+            content, filename, count = SERVER.export_scenario_group({
+                "eventType": "produce_events",
+                "eventIds": list(reversed(ids)),
+            })
+        self.assertEqual(filename, "星组-A.X.E.8.zip")
+        self.assertEqual(count, 7)
+        with zipfile.ZipFile(io.BytesIO(content)) as bundle:
+            self.assertEqual(bundle.namelist(), [f"{sequence:02d}.第{sequence}話.csv" for sequence in range(1, 8)])
 
     def test_activity_unit_inference_ignores_non_idol_speakers(self) -> None:
         self.assertEqual(SERVER.activity_unit_label([

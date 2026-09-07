@@ -58,6 +58,24 @@ assert.strictEqual(supportCard.characterName, '月冈恋钟');
 assert.strictEqual(supportCard.cardSequence, '027');
 assert.strictEqual(supportCard.groupCode, '3004027__');
 
+const starsUnitProduce = monitor.classifyScenario('produce_events', '3000100101');
+assert.strictEqual(starsUnitProduce.category, 'unit-produce');
+assert.strictEqual(starsUnitProduce.unitId, 'stars');
+assert.strictEqual(starsUnitProduce.unitLabel, '星组');
+assert.strictEqual(starsUnitProduce.unitProduceSequence, '001');
+assert.strictEqual(starsUnitProduce.storySequence, '01');
+assert.strictEqual(starsUnitProduce.groupCode, '30001001__');
+const alstroemeriaUnitProduce = monitor.classifyScenario('produce_events', '3000400107');
+assert.strictEqual(alstroemeriaUnitProduce.category, 'unit-produce');
+assert.strictEqual(alstroemeriaUnitProduce.unitId, 'alstroemeria');
+assert.strictEqual(alstroemeriaUnitProduce.storySequence, '07');
+assert.strictEqual(
+    monitor.childDisplayLine({
+        eventType: 'produce_events', eventId: '3000400107', storyTitle: '第七話',
+    }),
+    '3000400107 · 07.第七話',
+);
+
 const trueEnd = monitor.classifyScenario('produce_events', '201002011');
 assert.strictEqual(trueEnd.storyLabel, 'True End');
 
@@ -218,6 +236,25 @@ assert.strictEqual(supportCards.children[0].code, '3005025__');
 assert.deepStrictEqual(
     supportCards.children[0].children.map(item => item.eventId),
     ['300502501', '300502502'],
+);
+const unitProduceHierarchy = monitor.buildScenarioHierarchy([
+    ...Array.from({ length: 7 }, (_, index) => ({
+        eventType: 'produce_events', eventId: `30001001${String(index + 1).padStart(2, '0')}`,
+    })),
+    ...Array.from({ length: 7 }, (_, index) => ({
+        eventType: 'produce_events', eventId: `30004001${String(index + 1).padStart(2, '0')}`,
+    })),
+]);
+const unitProduceRoot = unitProduceHierarchy.find(node => node.treeKey === 'root/training');
+const starsUnitProduceBranch = unitProduceRoot.children.find(node => node.label === '星组')
+    .children.find(node => node.label === 'A.X.E.8.');
+const flowerUnitProduceBranch = unitProduceRoot.children.find(node => node.label === '花组')
+    .children.find(node => node.label === 'A.X.E.8.');
+assert.strictEqual(starsUnitProduceBranch.trainingGroup, true);
+assert.strictEqual(starsUnitProduceBranch.totalCount, 7);
+assert.deepStrictEqual(
+    flowerUnitProduceBranch.children.map(row => row.eventId),
+    ['3000400101', '3000400102', '3000400103', '3000400104', '3000400105', '3000400106', '3000400107'],
 );
 const houkago = characterRoot.children.find(node => node.label === '放课后');
 const chiyoko = houkago.children.find(node => node.label === '智代子');

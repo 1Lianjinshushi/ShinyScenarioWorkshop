@@ -1,5 +1,13 @@
 # Changelog
 
+## 20260907-r12
+
+- Recognized the new 10-digit A.X.E.8. scenario numbering used by unit-wide Produce chapters.
+- Classified the 2026-09-07 illumination STARS batch and the 2026-08-28 ALSTROEMERIA batch as full Produce chapters under `育成 -> 星组／花组 -> A.X.E.8.` rather than generic idol stories.
+- Added whole-group CSV ZIP export for A.X.E.8.; each seven-story batch is ordered and named `01` through `07`.
+- Added stable A.X.E.8. labels to the full resource library and update log, with unit-aware ZIP filenames.
+- Refreshed the bundled resource-library/title snapshot through the 2026-09-07 scan.
+
 ## 20260831-r11
 
 - Added automatic background prefetch immediately after a scenario JSON is loaded.

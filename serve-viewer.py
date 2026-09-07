@@ -124,6 +124,17 @@ CHARACTER_ARCHIVE_INFO = {
     "804": ("茜音", "剧团Lalalai联动", ("黒川あかね", "黑川茜", "あかね", "茜音")),
 }
 
+UNIT_PRODUCE_ARCHIVE_LABELS = {
+    "0001": "星组",
+    "0002": "安提卡",
+    "0003": "放课后",
+    "0004": "花组",
+    "0005": "迷光",
+    "0006": "水组",
+    "0007": "嘘组",
+    "0008": "黑星",
+}
+
 LIBRARY_UNIT_LABEL_REPLACEMENTS = {
     "ALSTROEMERIA组活": "花组组活",
     "noctchill组活": "水组组活",
@@ -1913,6 +1924,8 @@ def csv_story_prefix(event_type: str, event_id: str) -> str:
     sequence = event_id[-2:] if len(event_id) >= 2 else event_id
     if event_type == "produce_events" and re.fullmatch(r"[23]\d{8}", event_id):
         return "TE" if sequence == "11" else sequence
+    if event_type == "produce_events" and re.fullmatch(r"3(?:000[1-8])\d{3}\d{2}", event_id):
+        return sequence
     if event_type == "game_event_communications" and re.fullmatch(r"4001\d{5}", event_id):
         if sequence == "01":
             return "序章"
@@ -2135,6 +2148,11 @@ def group_archive_stem(
         bracket = re.search(r"【[^】]+】", card_name)
         title = bracket.group(0) if bracket else card_name
         return f"{short_name}{card_type}{f'・{title}' if title else ''}"
+    if event_type == "produce_events":
+        unit_match = re.fullmatch(r"3(\d{4})(\d{3})\d{2}", first_id)
+        if unit_match and unit_match.group(1) in UNIT_PRODUCE_ARCHIVE_LABELS:
+            unit = UNIT_PRODUCE_ARCHIVE_LABELS[unit_match.group(1)]
+            return f"{unit}-A.X.E.8."
     if event_type == "special_communications":
         occasion = special_occasion_label(all_tracks)
         if not occasion.endswith("剧情"):
