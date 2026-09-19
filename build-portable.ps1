@@ -1,5 +1,5 @@
 param(
-    [string]$Version = '20260919-r13',
+    [string]$Version = '20260919-r14',
     [string]$OutputDirectory = (Join-Path (Split-Path -Parent $PSScriptRoot) 'release'),
     [string]$NodeExecutable = 'C:\Users\Lenovo\AppData\Local\Programs\nodejs-v24.20.0\node.exe',
     [string]$NodeLicense = 'C:\Users\Lenovo\AppData\Local\Programs\nodejs-v24.20.0\LICENSE',
@@ -197,6 +197,7 @@ foreach ($runtimeFile in $runtimeManifest.files) {
 
 Copy-RequiredFile 'start-portable.cmd' 'start-viewer.cmd'
 Copy-RequiredFile 'output\pdf\ShinyScenarioWorkshop-Quick-Guide.pdf' 'Quick-Guide-ZH.pdf'
+Copy-RequiredFile 'output\pdf\ShinyScenarioWorkshop-Offline-Export-Guide.pdf' 'Offline-Export-Guide-ZH.pdf'
 
 $offlineToolNotice = if ($BundleOfflineRuntime) {
     'FFmpeg and FFprobe are also bundled in tools/ for experimental background export.'
@@ -238,6 +239,7 @@ Shiny Scenario Workshop Portable Edition $Version
 6. Close the server window to stop the application.
 
 For a short illustrated Chinese guide and the version maintenance log, open Quick-Guide-ZH.pdf in this folder.
+For FFmpeg/FFprobe setup and background video export, open Offline-Export-Guide-ZH.pdf.
 For sharing, first launch and upgrading without losing cached resources, open SHARING-GUIDE-ZH.md.
 
 No Python installation is required. This launcher uses Windows PowerShell included with Windows 10/11.

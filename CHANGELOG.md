@@ -1,5 +1,14 @@
 # Changelog
 
+## 20260919-r14 — 2026-09-19
+
+- Add a Bilibili illustrated FFmpeg installation link to the background-export
+  panel, with a reminder that both FFmpeg and FFprobe must be discoverable by
+  the workshop.
+- Add a standalone four-page Chinese PDF for FFmpeg/FFprobe setup, queueing,
+  progress, output locations, memory pause and troubleshooting. Bundle it with
+  the portable ZIP and publish it as a separate release asset.
+
 ## 20260919-r13 — 2026-09-19
 
 - Refine the workshop's desktop and narrow-screen visual hierarchy: clearer

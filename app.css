@@ -620,6 +620,8 @@ footer { padding: 22px 6px 0; color: var(--muted); font-size: 13px; }
 .offline-export-body { padding: 0 22px 22px; border-top: 1px solid rgba(255,255,255,.07); font-size: 14px; }
 .offline-export-body > .offline-export-note:first-child { padding-top: 18px; }
 .offline-export-body .offline-export-note, .offline-export-body .empty-state { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.65; }
+.offline-export-install { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 14px; margin-top: 14px; color: var(--muted); font-size: 13px; }
+.offline-export-install .button-link { min-height: 42px; padding: 0 16px; font-size: 14px; }
 .offline-export-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 17px 0 22px; }
 .offline-export-body button { font-size: 14px; padding: 10px 16px; min-height: 42px; }
 .offline-export-section { margin: 0 0 16px; padding: 20px; border: 1px solid var(--line); border-radius: 15px; background: rgba(255,255,255,.023); }
@@ -688,6 +690,7 @@ footer { padding: 22px 6px 0; color: var(--muted); font-size: 13px; }
   .offline-export-panel > summary > span:first-child { flex: 1 1 auto; }
   .offline-export-panel > summary > .badge { order: 2; margin-left: 0; }
   .offline-export-panel > summary::after { order: 1; }
+  .offline-export-install .button-link { width: 100%; }
   .offline-export-controls > button { width: 100%; }
   .offline-export-job { grid-template-columns: 18px minmax(0, 1fr); }
   .offline-export-job-status { grid-column: 2; grid-row: auto; justify-self: start; }

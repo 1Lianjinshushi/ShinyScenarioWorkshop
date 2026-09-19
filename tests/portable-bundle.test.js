@@ -10,12 +10,17 @@ const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
 const builder = read('build-portable.ps1');
 const launcher = read('start-portable.cmd');
 
-test('r13 portable builder cannot silently replace r12 or an existing package', () => {
-    assert.match(builder, /\$Version = '20260919-r13'/);
+test('r14 portable builder cannot silently replace r12 or an existing package', () => {
+    assert.match(builder, /\$Version = '20260919-r14'/);
     assert.match(builder, /\$Version -eq '20260907-r12'/);
     assert.match(builder, /Package target already exists/);
     assert.doesNotMatch(builder, /Remove-Item -LiteralPath \$PackageRoot/);
     assert.doesNotMatch(builder, /Remove-Item -LiteralPath \$ZipPath/);
+});
+
+test('portable bundle includes the standalone offline-export PDF guide', () => {
+    assert.match(builder, /Copy-RequiredFile 'output\\pdf\\ShinyScenarioWorkshop-Offline-Export-Guide\.pdf' 'Offline-Export-Guide-ZH\.pdf'/);
+    assert.ok(fs.statSync(path.join(root, 'output/pdf/ShinyScenarioWorkshop-Offline-Export-Guide.pdf')).size > 0);
 });
 
 test('offline experiment inclusion is a fixed production dependency list', () => {

@@ -28,3 +28,9 @@ test('workshop controls retain focus, reduced-motion, and narrow-screen treatmen
     assert.match(css, /@media \(prefers-reduced-motion: reduce\)/);
     assert.match(css, /\.offline-export-body \[hidden\]\s*\{\s*display:\s*none !important;/);
 });
+
+test('background export links to the FFmpeg installation article in a new tab', () => {
+    assert.match(html, /<a class="button-link" href="https:\/\/www\.bilibili\.com\/read\/cv33507583\/" target="_blank" rel="noopener noreferrer">FFmpeg 安装图文教程 ↗<\/a>/);
+    assert.match(html, /<code>ffprobe\.exe<\/code> 放进工坊 <code>tools<\/code>/);
+    assert.match(css, /\.offline-export-install \.button-link\s*\{/);
+});

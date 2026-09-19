@@ -21,7 +21,7 @@ regular idols/collaboration characters/Hazuki/president, four interaction
 sounds, and tap-effect data.
 The exact list is recorded in `portable-runtime-assets.json`.
 
-The 20260919-r13 builder also includes local copies of Node.js, Playwright,
+The 20260919-r14 builder also includes local copies of Node.js, Playwright,
 and playwright-core for experimental background export. FFmpeg and FFprobe are
 excluded by default; the explicit `-BundleOfflineRuntime` option adds them only
 after the publisher's redistribution review. Notices are described in

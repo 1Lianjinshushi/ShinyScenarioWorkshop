@@ -14,6 +14,9 @@
 - 图文说明书：从
   [`Quick-Guide-ZH.pdf`](https://github.com/1Lianjinshushi/ShinyScenarioWorkshop/releases/latest/download/Quick-Guide-ZH.pdf)
   下载。
+- 后台直出专用教程：从
+  [`Offline-Export-Guide-ZH.pdf`](https://github.com/1Lianjinshushi/ShinyScenarioWorkshop/releases/latest/download/Offline-Export-Guide-ZH.pdf)
+  下载，含 FFmpeg/FFprobe 配置与排障。
 - 分享、首次启动与后续更新：[`SHARING-GUIDE-ZH.md`](./SHARING-GUIDE-ZH.md)。
 - 版本维护记录：[`CHANGELOG.md`](./CHANGELOG.md)。
 
@@ -198,7 +201,7 @@ info,<eventType>/<eventId>.json,,
 
 源 JSON 快照、任务日志与检查报告仍位于 `exports/offline-jobs/<任务ID>/`。成片检查通过后才提供最终 MP4；运行结束后自动删除该任务的可再生编码流、PCM、视频解码帧等中间文件。此清理不是移入回收站，源 JSON 快照、资源缓存、最终 MP4 与报告保留。CLI 验证目录默认保留中间文件供回归对照。
 
-20260919-r13 便携构建会把 Node.js、Playwright／playwright-core 放在 `tools/`；FFmpeg／FFprobe 因再分发合规核查默认不打包，只有构建者显式使用 `-BundleOfflineRuntime` 时才会纳入。未包含时，收件人需自行安装并通过 `SSV_FFMPEG`、`SSV_FFPROBE` 指定。启动器优先使用系统安装的 Edge，缺少时回退 Chrome；两者都没有时会明确提示。播放器与编辑仍可使用，但后台直出还须有兼容的本机浏览器及 H.264 WebCodecs 支持。构建清单不等于跨电脑验收：不同机器的浏览器、编码器、内存和性能仍需实测，负载保护也不能保证与所有前台软件并行时零卡顿。安装及常见问题见 [便携版分享说明](SHARING-GUIDE-ZH.md)；开发验证细节见源码仓库中的 `experiments/offline-export/README.md`。
+20260919-r14 便携构建会把 Node.js、Playwright／playwright-core 放在 `tools/`；FFmpeg／FFprobe 因再分发合规核查默认不打包，只有构建者显式使用 `-BundleOfflineRuntime` 时才会纳入。未包含时，收件人需自行安装，并把 `ffmpeg.exe`、`ffprobe.exe` 放进解压后包内的 `tools/`，或通过 `SSV_FFMPEG`、`SSV_FFPROBE` 指定绝对路径；仅配置 PATH 不保证直出可用。启动器优先使用系统安装的 Edge，缺少时回退 Chrome；两者都没有时会明确提示。播放器与编辑仍可使用，但后台直出还须有兼容的本机浏览器及 H.264 WebCodecs 支持。构建清单不等于跨电脑验收：不同机器的浏览器、编码器、内存和性能仍需实测，负载保护也不能保证与所有前台软件并行时零卡顿。安装及常见问题见 [便携版分享说明](SHARING-GUIDE-ZH.md) 和直出 PDF；开发验证细节见源码仓库中的 `experiments/offline-export/README.md`。
 
 旧 OBS／浏览器录屏入口已从工坊移除，旧后端保持禁用；无需安装或配置 OBS。
 

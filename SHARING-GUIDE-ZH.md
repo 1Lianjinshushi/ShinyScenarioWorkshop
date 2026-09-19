@@ -7,7 +7,7 @@
 - `ShinyScenarioViewer-Portable-<版本号>.zip`
 - `ShinyScenarioViewer-Portable-<版本号>.zip.sha256.txt`
 
-不要把自己的 `translations/`、`exports/`、未清理的监听状态或已下载的剧情专属资源重新打进公开包。正式构建脚本只保留经过清理的资源库／更新日志快照，并移除维护者的未读标记、页游监听状态和资源请求队列。便携包包含字体、播放器 UI、日志头像、交互音效和粒子等启动必需内容；20260919-r13 构建还会带上 Node.js、Playwright／playwright-core，但默认不带 FFmpeg／FFprobe，也不带浏览器。只有发布者完成再分发合规核查并显式使用 `-BundleOfflineRuntime`，构建包才会带上 FFmpeg／FFprobe。具体边界与第三方许可见 `DISTRIBUTION-NOTICE.md`、`THIRD-PARTY-NOTICES.md`。
+不要把自己的 `translations/`、`exports/`、未清理的监听状态或已下载的剧情专属资源重新打进公开包。正式构建脚本只保留经过清理的资源库／更新日志快照，并移除维护者的未读标记、页游监听状态和资源请求队列。便携包包含字体、播放器 UI、日志头像、交互音效和粒子等启动必需内容；20260919-r14 构建还会带上 Node.js、Playwright／playwright-core，但默认不带 FFmpeg／FFprobe，也不带浏览器。只有发布者完成再分发合规核查并显式使用 `-BundleOfflineRuntime`，构建包才会带上 FFmpeg／FFprobe。具体边界与第三方许可见 `DISTRIBUTION-NOTICE.md`、`THIRD-PARTY-NOTICES.md`。
 
 ## 收件人第一次使用
 
@@ -22,6 +22,8 @@
 首次打开一篇从未缓存的剧情仍需要联网。速度取决于该篇新增资源和资源站连接，但下载结果会保留，不会每次重复等待。
 
 后台直出是试验功能。便携包带齐程序依赖不代表已在其他电脑验证通过；使用它还需要本机浏览器支持 H.264 WebCodecs，并有足够内存和磁盘空间。首次使用请先用短篇剧情测试，检查成片画面、声音和字幕。它不录桌面，但会启动独立无界面浏览器进程。版本更新时不要复制旧版 `tools/` 到新版。
+
+后台直出的完整操作和 FFmpeg／FFprobe 下载、配置方法，见便携包中的 `Offline-Export-Guide-ZH.pdf`。最省心的方式是把自己下载的 `ffmpeg.exe`、`ffprobe.exe` 放进解压后工坊的 `tools/` 文件夹，再重新启动；仅配置系统 `PATH` 不保证直出进程能找到它们。
 
 ## 校验下载是否完整（可选）
 
