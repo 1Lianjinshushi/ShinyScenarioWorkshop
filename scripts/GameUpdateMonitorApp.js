@@ -14,6 +14,7 @@
     let rebuildingLabels = false;
     let lastExpandedRoot = null;
     let lastTreeSignature = '';
+    let monitorVisible = typeof IntersectionObserver !== 'function';
     const collapseAllButton = document.createElement('button');
     collapseAllButton.type = 'button';
     collapseAllButton.className = 'monitor-collapse-float';
@@ -29,7 +30,14 @@
     }
 
     function syncCollapseAllButton() {
-        collapseAllButton.hidden = !list.querySelector('details[open]');
+        collapseAllButton.hidden = !monitorVisible || !list.querySelector('details[open]');
+    }
+
+    if (typeof IntersectionObserver === 'function') {
+        new IntersectionObserver(entries => {
+            monitorVisible = entries.some(entry => entry.isIntersecting);
+            syncCollapseAllButton();
+        }).observe(list);
     }
 
     collapseAllButton.addEventListener('click', () => {

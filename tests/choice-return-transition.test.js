@@ -12,6 +12,8 @@ globalThis.WaitType = { TIME: 'time', EFFECT: 'effect' };
 
 const source = fs.readFileSync(path.resolve(__dirname, '..', 'scripts', 'AdvPlayer.js'), 'utf8');
 vm.runInThisContext(`${source}\n;globalThis.AdvPlayer = AdvPlayer;`, { filename: 'AdvPlayer.js' });
+assert.match(source, /this\._selectList\.on\('selectStart', \(\) => this\._onSelectStart\(\)\)/,
+    'the choice list must hide the button as soon as a choice is clicked');
 
 async function main() {
     const movieCalls = [];
@@ -110,6 +112,32 @@ async function main() {
     assert.equal(leadPlayer._choiceReturnLeadDelay({
         waitType: 'time', waitTime: 4000, nextLabel: 'missing', bg: '00000',
     }, 4000), null, 'a non-terminal scripted wait must remain untouched');
+
+    let skipVisible = true;
+    const visibilityChanges = [];
+    const choicePlayer = Object.create(globalThis.AdvPlayer.prototype);
+    Object.assign(choicePlayer, {
+        _mainController: { setChoiceSkipVisible(visible) {
+            skipVisible = visible;
+            visibilityChanges.push(visible);
+        } },
+        _scenarioPlayer: { setTextControl() {} },
+        _scenarioLogLayer: { stackTrack() {} },
+        _trackManager: {},
+        _pendingSelectEntries: [{ index: 10, historyPosition: 2 }],
+        _playHistory: [0, 1, 10],
+        _forward() {},
+        _changeToLocked() {},
+        emit() {},
+    });
+    choicePlayer._onSelectStart();
+    assert.equal(skipVisible, false, 'jump button must vanish at the click, before selection animation ends');
+    choicePlayer._onSelect({ nextLabel: 'middle', text: 'Middle' });
+    assert.equal(skipVisible, false, 'jump button must remain hidden during the chosen branch');
+    choicePlayer._pendingSelectEntries = [{ index: 10, historyPosition: 2 }];
+    choicePlayer._onAppearSelectList();
+    assert.equal(skipVisible, true, 'jump button must return when the choice node is ready again');
+    assert.deepEqual(visibilityChanges, [false, false, true]);
 
     console.log('choice-return-transition: PASS');
 }

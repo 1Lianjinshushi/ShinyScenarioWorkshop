@@ -22,6 +22,7 @@ $MonitorState = Join-Path $MonitorRoot 'game-update-state.json'
 # LOCAL_MONITOR_END
 $BaseUrl = "http://${HostAddress}:$Port"
 $AppUrl = "$BaseUrl/app.html"
+. (Join-Path $PSScriptRoot 'offline-export-bridge.ps1')
 $MaxBodySize = 128MB
 $MaxExternalCardSize = 32MB
 $MaxExternalMovieSize = 192MB
@@ -1136,6 +1137,26 @@ function Read-JsonBody([object]$Request) {
 }
 
 function Handle-ApiRequest([IO.Stream]$Stream, [object]$Request) {
+    if ($Request.Path.StartsWith('/api/offline-export/')) {
+        $hostValue = $Request.Headers['Host']
+        if ($hostValue -notin @("127.0.0.1:$Port", "localhost:$Port")) { Write-ErrorResponse $Stream 403 'Local host required'; return }
+        $route = $Request.Path.Substring('/api/offline-export'.Length)
+        if ($Request.Method -eq 'GET' -and $route -eq '/jobs') {
+            Write-JsonResponse $Stream (Invoke-OfflineExportBridge 'GET' '/jobs' @{})
+            return
+        }
+        if ($Request.Method -ne 'POST' -or $route -notin @('/jobs', '/start', '/settings', '/resume', '/cancel', '/open', '/open-root', '/attention')) { Write-ErrorResponse $Stream 400 'Unknown offline export operation'; return }
+        if ($Request.Headers['X-SSV-Offline'] -ne '1' -or ($Request.Headers['Origin'] -and $Request.Headers['Origin'] -ne "http://$hostValue")) {
+            Write-ErrorResponse $Stream 403 'Only the local workshop may submit export jobs'; return
+        }
+        $payload = Read-JsonBody $Request
+        if ($route -eq '/attention') { $result = Invoke-OfflineProgressAttention $payload }
+        else { $result = Invoke-OfflineExportBridge 'POST' $route $payload }
+        $status = 200
+        if ($result.error) { $status = 400 }
+        Write-JsonResponse $Stream $result $status
+        return
+    }
     if ($Request.Method -eq 'GET' -and $Request.Path -eq '/api/state') {
         Write-JsonResponse $Stream ([PSCustomObject]@{
             speakers = @(Read-SpeakerRows)

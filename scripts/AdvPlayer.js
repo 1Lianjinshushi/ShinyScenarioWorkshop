@@ -86,6 +86,7 @@ class AdvPlayer extends PIXI.utils.EventEmitter {
 
         // Wire SelectList
         this._selectList.on('appear', () => this._onAppearSelectList());
+        this._selectList.on('selectStart', () => this._onSelectStart());
         this._selectList.on('select', (e) => this._onSelect(e));
         this._bindGlobalTapEffect();
     }
@@ -810,7 +811,16 @@ class AdvPlayer extends PIXI.utils.EventEmitter {
         const nt = this._trackManager.nextTrack;
         if (!nt || !nt.select) this._selectList.appear();
     }
+    _onSelectStart() {
+        // The choice confirmation animation runs before `select` is emitted.
+        // Hide the jump button as soon as the option is clicked, and keep it
+        // hidden throughout this branch until the choice node reappears.
+        if (this._mainController && this._mainController.setChoiceSkipVisible) {
+            this._mainController.setChoiceSkipVisible(false);
+        }
+    }
     _onSelect(e) {
+        this._onSelectStart();
         this._scenarioPlayer.setTextControl('cm');
         this.emit('select', e.nextLabel);
         this._trackManager.nextLabel = e.nextLabel;

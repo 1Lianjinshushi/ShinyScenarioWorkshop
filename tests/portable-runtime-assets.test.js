@@ -33,6 +33,42 @@ test('every portable texture atlas includes its referenced image', () => {
     }
 });
 
+test('portable runtime includes locally available and cached-story text/log frames', () => {
+    const declared = new Set(manifest.files);
+    const framePath = (kind, id) => `assets/images/event/${kind}/${id}.png`;
+    for (const kind of ['text_frame', 'log_text_frame']) {
+        const directory = path.join(root, 'assets', 'images', 'event', kind);
+        for (const name of fs.readdirSync(directory).filter(name => name.endsWith('.png'))) {
+            assert.ok(declared.has(framePath(kind, path.basename(name, '.png'))), `${kind}/${name}`);
+        }
+    }
+
+    // Cached scenario JSON is personal data and is absent from a source checkout.
+    // When present, every raw textFrame ID must have both locally forced variants.
+    const cacheRoot = path.join(root, 'assets', 'json');
+    if (!fs.existsSync(cacheRoot)) return;
+    const pending = [cacheRoot];
+    while (pending.length) {
+        const directory = pending.pop();
+        for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+            const entryPath = path.join(directory, entry.name);
+            if (entry.isDirectory()) { pending.push(entryPath); continue; }
+            if (!entry.isFile() || !entry.name.endsWith('.json')) continue;
+            const tracks = JSON.parse(fs.readFileSync(entryPath, 'utf8'));
+            if (!Array.isArray(tracks)) continue;
+            for (const track of tracks) {
+                if (!track || track.textFrame == null) continue;
+                const id = String(track.textFrame);
+                // "off" and similar control commands are preserved, not asset IDs.
+                if (!/^\d+$/.test(id)) continue;
+                for (const kind of ['text_frame', 'log_text_frame']) {
+                    assert.ok(declared.has(framePath(kind, id)), `${path.relative(root, entryPath)} uses ${kind}/${id}.png`);
+                }
+            }
+        }
+    }
+});
+
 test('player loads common UI and interaction resources from the local runtime root', () => {
     const source = fs.readFileSync(path.join(root, 'remote-main.js'), 'utf8');
     assert.match(source, /const runtimeRoot = SSV_LOCAL_ASSET_ROOT;/);

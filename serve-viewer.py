@@ -21,6 +21,7 @@ from urllib.parse import parse_qs, quote, urlparse
 from urllib.request import Request, urlopen
 
 from obs_export import ObsExportManager
+from offline_export_bridge import relay as offline_export_relay, progress_taskbar_attention
 
 
 HOST = "127.0.0.1"
@@ -2425,6 +2426,15 @@ class ViewerRequestHandler(SimpleHTTPRequestHandler):
 
     def do_GET(self) -> None:
         parsed = urlparse(self.path)
+        if parsed.path == "/api/offline-export/jobs":
+            if self.headers.get('Host') not in (f'127.0.0.1:{PORT}', f'localhost:{PORT}'):
+                self._send_json({'error': 'Local host required'}, status=403)
+                return
+            try:
+                self._send_json(offline_export_relay(PROJECT_ROOT, 'GET', '/jobs'))
+            except Exception as error:
+                self._send_json({'error': str(error)}, status=503)
+            return
         if parsed.path == "/api/state":
             self._send_json({
                 "speakers": read_speaker_rows(),
@@ -2537,6 +2547,25 @@ class ViewerRequestHandler(SimpleHTTPRequestHandler):
     def do_POST(self) -> None:
         parsed = urlparse(self.path)
         try:
+            if parsed.path.startswith('/api/offline-export/'):
+                route = parsed.path.removeprefix('/api/offline-export')
+                expected = self.headers.get('Host')
+                if (expected not in (f'127.0.0.1:{PORT}', f'localhost:{PORT}')
+                        or self.headers.get('X-SSV-Offline') != '1'
+                        or self.headers.get('Origin') not in (None, f'http://{expected}')):
+                    self._send_json({'error': 'Only the local workshop may submit export jobs'}, status=403)
+                    return
+                if route == '/attention':
+                    payload = self._read_json()
+                    result = progress_taskbar_attention(PROJECT_ROOT,
+                        payload.get('action'), payload.get('token'), payload.get('ids', []))
+                    self._send_json(result, status=400 if result.get('error') else 200)
+                    return
+                if route not in ('/jobs', '/start', '/settings', '/resume', '/cancel', '/open', '/open-root'):
+                    raise ValueError('Unknown offline export operation')
+                result = offline_export_relay(PROJECT_ROOT, 'POST', route, self._read_json())
+                self._send_json(result, status=400 if result.get('error') else 200)
+                return
             if parsed.path == "/api/speakers":
                 payload = self._read_json()
                 entries = payload.get("entries")

@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-09-07T05:16:02+00:00",
+  "generatedAt": "2026-09-19T05:07:28+00:00",
   "cards": {
     "3004027": {
       "cardName": "【食堂のリトルアイドル】",
@@ -11951,6 +11951,76 @@
       "cardId": "1040280060",
       "label": "阳希P卡・【恋まで、あと25メートル】",
       "source": "shinycolors.moe/card-event-id"
+    },
+    "3019021": {
+      "cardName": "【三つ子の魂えたーなる！】",
+      "rawCardName": "【三つ子の魂えたーなる！】和泉愛依",
+      "characterId": "019",
+      "characterName": "爱依",
+      "cardType": "Support",
+      "cardId": "2040190190",
+      "label": "爱依S卡・【三つ子の魂えたーなる！】",
+      "source": "shinycolors.moe/card-event-id"
+    },
+    "3002029": {
+      "cardName": "【分景】",
+      "rawCardName": "【分景】風野灯織",
+      "characterId": "002",
+      "characterName": "灯织",
+      "cardType": "Support",
+      "cardId": "2040020230",
+      "label": "灯织S卡・【分景】",
+      "source": "shinycolors.moe/card-event-id"
+    },
+    "3025025": {
+      "cardName": "【NAP】",
+      "rawCardName": "【NAP】緋田美琴",
+      "characterId": "025",
+      "characterName": "美琴",
+      "cardType": "Support",
+      "cardId": "2040250200",
+      "label": "美琴S卡・【NAP】",
+      "source": "shinycolors.moe/card-event-id"
+    },
+    "3010027": {
+      "cardName": "【metomeスパークル】",
+      "rawCardName": "【metomeスパークル】園田智代子",
+      "characterId": "010",
+      "characterName": "智代子",
+      "cardType": "Support",
+      "cardId": "2030100140",
+      "label": "智代子S卡・【metomeスパークル】",
+      "source": "shinycolors.moe/card-event-id"
+    },
+    "3025026": {
+      "cardName": "【EYE LEVEL】",
+      "rawCardName": "【EYE LEVEL】緋田美琴",
+      "characterId": "025",
+      "characterName": "美琴",
+      "cardType": "Support",
+      "cardId": "2030250050",
+      "label": "美琴S卡・【EYE LEVEL】",
+      "source": "shinycolors.moe/card-event-id"
+    },
+    "3015028": {
+      "cardName": "【ファストムーン・バーガリア】",
+      "rawCardName": "【ファストムーン・バーガリア】大崎甜花",
+      "characterId": "015",
+      "characterName": "甜花",
+      "cardType": "Support",
+      "cardId": "2040150200",
+      "label": "甜花S卡・【ファストムーン・バーガリア】",
+      "source": "shinycolors.moe/card-event-id"
+    },
+    "2009022": {
+      "cardName": "【げっと！！！】",
+      "rawCardName": "【げっと！！！】小宮果穂",
+      "characterId": "009",
+      "characterName": "果穗",
+      "cardType": "Produce",
+      "cardId": "1040090150",
+      "label": "果穗P卡・【げっと！！！】",
+      "source": "shinycolors.moe/card-event-id"
     }
   },
   "activities": {
@@ -12440,10 +12510,12 @@
       "source": "scenario-speaker-scan"
     }
   },
-  "errors": [],
+  "errors": [
+    "仍有 6 张卡尚无资料站卡名：2009022, 3002030, 3008029, 3011027, 3015028, 3025026"
+  ],
   "stats": {
-    "knownCardGroups": 1088,
-    "namedCardGroups": 1088,
+    "knownCardGroups": 1098,
+    "namedCardGroups": 1092,
     "knownActivityGroups": 97,
     "namedActivityGroups": 97
   }

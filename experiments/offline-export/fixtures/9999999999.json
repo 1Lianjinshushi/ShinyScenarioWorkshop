@@ -1,0 +1,9 @@
+[
+  {
+    "text": "Preflight-only missing resource fixture; never a real scenario.",
+    "textFrame": "001",
+    "bg": "ssv_missing_background",
+    "voice": "ssv_missing_voice",
+    "movie": "ssv_missing_card"
+  }
+]

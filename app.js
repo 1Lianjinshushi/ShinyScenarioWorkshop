@@ -3,7 +3,6 @@
 const REMOTE_ROOT = 'https://service.sc-viewer.top/custom';
 const REMOTE_JSON_FALLBACK = 'https://service.sc-viewer.top/convert/cache/json';
 const PRESERVED_ASSET_VALUES = new Set(['', 'on', 'off', 'pause', 'resume', 'fade_out']);
-const VIDEO_EXPORT_FROZEN = true;
 const TRANSLATOR_STORAGE_KEY = 'ssv-workshop-translator';
 
 const state = {
@@ -31,10 +30,6 @@ const state = {
     supportStills: [],
     cardMovies: [],
     supportCheckToken: 0,
-    videoExportJob: '',
-    videoExportActive: false,
-    videoExportPollTimer: 0,
-    videoExportBackend: '',
 };
 
 const ui = Object.fromEntries([
@@ -45,10 +40,7 @@ const ui = Object.fromEntries([
     'speaker-empty', 'speaker-editor', 'save-speakers', 'speaker-archive-path',
     'translation-csv', 'translation-batch', 'translation-batch-report', 'translation-badge', 'file-name', 'translation-report',
     'translation-related-select', 'translation-related',
-    'build-translation', 'play-chinese', 'play-edit', 'export-video', 'export-video-browser', 'global-status',
-    'video-export-report', 'video-export-progress-bar', 'video-export-progress-text',
-    'video-export-unlock', 'video-export-cancel', 'video-export-download', 'video-export-frame',
-    'obs-port', 'obs-password', 'obs-test', 'obs-export-status', 'obs-export-note',
+    'build-translation', 'play-chinese', 'play-edit', 'global-status',
     'support-still-panel', 'support-still-badge', 'support-still-list',
     'card-movie-panel', 'card-movie-badge', 'card-movie-list',
     'translator-name', 'translator-note',
@@ -1273,6 +1265,10 @@ async function handleBatchCsvSelection(event) {
         if (manifest) {
             window.dispatchEvent(new CustomEvent('ssv-related-manifest-updated', { detail: manifest }));
         }
+        window.dispatchEvent(new CustomEvent('ssv-translation-batch-imported', {
+            detail: { items: successes.map(({ fileName, eventType, eventId, text, translated }) =>
+                ({ fileName, eventType, eventId, text, translated })) },
+        }));
         const first = successes[0];
         ui['event-type'].value = first.eventType;
         ui['event-id'].value = first.eventId;
@@ -1458,257 +1454,6 @@ async function playEditScenario() {
     }
 }
 
-function formatVideoExportTime(milliseconds) {
-    const totalSeconds = Math.max(0, Math.floor(Number(milliseconds || 0) / 1000));
-    const minutes = Math.floor(totalSeconds / 60);
-    const seconds = String(totalSeconds % 60).padStart(2, '0');
-    return `${minutes}:${seconds}`;
-}
-
-function showVideoExportProgress(message, options = {}) {
-    const report = ui['video-export-report'];
-    const bar = ui['video-export-progress-bar'];
-    report.hidden = false;
-    ui['video-export-progress-text'].textContent = message;
-    if (options.indeterminate) {
-        bar.classList.add('indeterminate');
-        bar.style.width = '32%';
-    } else {
-        bar.classList.remove('indeterminate');
-        bar.style.width = `${Math.max(0, Math.min(100, Number(options.progress || 0)))}%`;
-    }
-}
-
-function stopVideoExportPolling() {
-    if (state.videoExportPollTimer) clearInterval(state.videoExportPollTimer);
-    state.videoExportPollTimer = 0;
-}
-
-function finishVideoExportUi(job, error = null) {
-    stopVideoExportPolling();
-    state.videoExportActive = false;
-    ui['video-export-unlock'].hidden = true;
-    ui['video-export-cancel'].hidden = true;
-    if (error) {
-        showVideoExportProgress(`视频直出失败：${error}`, { progress: 0 });
-        setGlobalStatus(`视频直出失败：${error}`, 'error');
-    } else {
-        const quality = job.qualityWarning ? `；${job.qualityWarning}` : '';
-        showVideoExportProgress(`视频已导出：${job.outputPath || job.outputUrl}${quality}`, { progress: 100 });
-        const link = ui['video-export-download'];
-        link.href = job.outputUrl;
-        link.download = `${job.eventId || state.eventId}.mp4`;
-        link.hidden = false;
-        setGlobalStatus(
-            `1080p60 MP4 已导出：${job.outputPath || job.outputUrl}${quality}`,
-            job.qualityWarning ? 'error' : 'good',
-        );
-    }
-    ui['video-export-frame'].src = 'about:blank';
-    state.videoExportJob = '';
-    state.videoExportBackend = '';
-    updateActionAvailability();
-}
-
-async function pollVideoExportStatus() {
-    if (!state.videoExportJob) return;
-    try {
-        const statusApi = state.videoExportBackend === 'obs'
-            ? './api/obs-export/status'
-            : './api/video-export/status';
-        const response = await fetch(`${statusApi}?job=${encodeURIComponent(state.videoExportJob)}`, {
-            cache: 'no-store',
-        });
-        const job = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(job.error || `HTTP ${response.status}`);
-        if (job.state === 'ready') {
-            finishVideoExportUi(job);
-            return;
-        }
-        if (job.state === 'error') {
-            finishVideoExportUi(job, job.error || job.stage || '未知错误');
-            return;
-        }
-        if (job.state === 'transcoding') {
-            ui['video-export-frame'].src = 'about:blank';
-            showVideoExportProgress(`${job.stage || '正在封装 MP4'} · ${job.progress || 0}%`, {
-                progress: job.progress || 0,
-            });
-        } else if (job.backend === 'obs' && ['preparing', 'loading', 'recording', 'finalizing'].includes(job.state)) {
-            const started = job.startedAt ? Date.parse(job.startedAt) : 0;
-            const elapsed = started ? ` · ${formatVideoExportTime(Date.now() - started)}` : '';
-            showVideoExportProgress(`${job.stage || 'OBS 正在处理'}${elapsed}`, {
-                progress: job.progress || 0,
-                indeterminate: job.state === 'loading' || job.state === 'recording',
-            });
-        } else if (job.state === 'receiving' && !ui['video-export-progress-text'].textContent.includes('渲染')) {
-            showVideoExportProgress(job.stage || '等待播放器开始录制', { indeterminate: true });
-        }
-    } catch (error) {
-        finishVideoExportUi({}, error.message);
-    }
-}
-
-function beginVideoExportPolling() {
-    stopVideoExportPolling();
-    state.videoExportPollTimer = setInterval(pollVideoExportStatus, 1000);
-    pollVideoExportStatus();
-}
-
-function videoExportPlayerUrl(jobId) {
-    const params = new URLSearchParams({
-        eventType: state.eventType,
-        eventId: state.eventId,
-        source: 'remote',
-        language: 'cn',
-        mode: 'export',
-        exportJob: jobId,
-        translationRevision: String(Date.now()),
-    });
-    return `./?${params.toString()}`;
-}
-
-function obsConnectionPayload() {
-    const port = Number(ui['obs-port'].value || 4455);
-    if (!Number.isInteger(port) || port < 1 || port > 65535) {
-        throw new Error('OBS WebSocket 端口格式不正确。');
-    }
-    return { port, password: ui['obs-password'].value || '' };
-}
-
-async function testObsConnection() {
-    ui['obs-test'].disabled = true;
-    setBadge('obs-export-status', '正在检测');
-    try {
-        const result = await apiPost('./api/obs/probe', obsConnectionPayload());
-        const resolution = result.video
-            ? `${result.video.outputWidth}×${result.video.outputHeight} ${Math.round(result.video.fpsNumerator / result.video.fpsDenominator)}fps`
-            : '视频设置未知';
-        const encoder = result.recordEncoder || '编码器未知';
-        const notes = [`OBS ${result.obsVersion || ''}`, result.profile ? `配置 ${result.profile}` : '', resolution, encoder]
-            .filter(Boolean).join(' · ');
-        if (!result.audioSafe) {
-            setBadge('obs-export-status', '音频设置不安全', 'warn');
-            ui['obs-export-note'].textContent = `${notes}。请先禁用 OBS 的桌面音频和全部麦克风/Aux，否则会录入系统声音并可能触发蓝牙通话模式。`;
-            setGlobalStatus('OBS 已连接，但全局音频设备仍未禁用。', 'error');
-        } else {
-            setBadge('obs-export-status', result.encoderIsNvenc ? 'OBS / NVENC 就绪' : 'OBS 已连接', result.encoderIsNvenc ? 'good' : 'warn');
-            ui['obs-export-note'].textContent = `${notes}。${result.encoderIsNvenc ? '将使用 NVIDIA 硬件编码。' : '当前不是 NVENC；可用，但建议在 OBS 输出设置中改成 NVIDIA NVENC。'} OBS 只录画面，剧情混音由播放器内部独立录制后合并；你可以在 Edge 中正常看视频。`;
-            setGlobalStatus('OBS WebSocket 连接正常。', 'good');
-        }
-    } catch (error) {
-        setBadge('obs-export-status', '连接失败', 'warn');
-        ui['obs-export-note'].textContent = `OBS 检测失败：${error.message}`;
-        setGlobalStatus(`OBS 检测失败：${error.message}`, 'error');
-    } finally {
-        ui['obs-test'].disabled = false;
-    }
-}
-
-function ensureVideoExportable() {
-    if ((state.tracks || []).some(track => track && typeof track === 'object' && track.select)) {
-        throw new Error('当前剧情含有选择支；直出第一版暂不自动替你选择，请先使用普通播放。');
-    }
-}
-
-async function exportChineseVideoObs() {
-    if (state.videoExportActive) return;
-    ui['video-export-download'].hidden = true;
-    ui['video-export-unlock'].hidden = true;
-    ui['video-export-cancel'].hidden = false;
-    state.videoExportActive = true;
-    state.videoExportBackend = 'obs';
-    updateActionAvailability();
-    showVideoExportProgress('正在保存最新 CSV 并连接 OBS……', { indeterminate: true });
-    try {
-        ensureVideoExportable();
-        await saveTranslationForPlayback();
-        const job = await apiPost('./api/obs-export/create', Object.assign({
-            eventType: state.eventType,
-            eventId: state.eventId,
-        }, obsConnectionPayload()));
-        state.videoExportJob = job.jobId;
-        showVideoExportProgress(job.stage || 'OBS 正在后台预载剧情资源……', { indeterminate: true });
-        beginVideoExportPolling();
-    } catch (error) {
-        state.videoExportJob = '';
-        finishVideoExportUi({}, error.message);
-    }
-}
-
-async function exportChineseVideoBrowser() {
-    if (state.videoExportActive) return;
-    ui['video-export-download'].hidden = true;
-    ui['video-export-unlock'].hidden = true;
-    ui['video-export-cancel'].hidden = false;
-    state.videoExportActive = true;
-    state.videoExportBackend = 'browser';
-    updateActionAvailability();
-    showVideoExportProgress('正在保存最新 CSV 并建立视频任务……', { indeterminate: true });
-    try {
-        ensureVideoExportable();
-        await saveTranslationForPlayback();
-        const job = await apiPost('./api/video-export/create', {
-            eventType: state.eventType,
-            eventId: state.eventId,
-        });
-        state.videoExportJob = job.jobId;
-        showVideoExportProgress('正在后台加载剧情和资源……', { indeterminate: true });
-        beginVideoExportPolling();
-        ui['video-export-frame'].src = videoExportPlayerUrl(job.jobId);
-    } catch (error) {
-        state.videoExportJob = '';
-        finishVideoExportUi({}, error.message);
-    }
-}
-
-function handleVideoExportMessage(payload) {
-    if (!state.videoExportActive || payload.jobId !== state.videoExportJob) return;
-    if (payload.stage === 'needs-gesture') {
-        showVideoExportProgress(payload.message || '浏览器需要一次声音授权。', { indeterminate: true });
-        ui['video-export-unlock'].hidden = false;
-        return;
-    }
-    if (payload.stage === 'ready') {
-        showVideoExportProgress('资源加载完成，正在启动 AUTO 实时渲染……', { indeterminate: true });
-        return;
-    }
-    if (payload.stage === 'warming') {
-        showVideoExportProgress(payload.message || '正在预热纹理与渲染器……', { indeterminate: true });
-        return;
-    }
-    if (payload.stage === 'preroll') {
-        showVideoExportProgress(payload.message || '正在预录并稳定编码器；这段不会出现在成片中……', { indeterminate: true });
-        return;
-    }
-    if (payload.stage === 'scenario-start') {
-        showVideoExportProgress('预卷完成，正在按 AUTO 实时渲染……', { indeterminate: true });
-        return;
-    }
-    if (payload.stage === 'capturing' || payload.stage === 'upload') {
-        ui['video-export-unlock'].hidden = true;
-        const size = payload.uploadedBytes
-            ? ` · 已写入 ${(payload.uploadedBytes / 1024 / 1024).toFixed(1)} MiB`
-            : '';
-        showVideoExportProgress(`正在按 AUTO 实时渲染 ${formatVideoExportTime(payload.elapsedMs)}${size}`, {
-            indeterminate: true,
-        });
-        return;
-    }
-    if (payload.stage === 'tail') {
-        showVideoExportProgress(payload.message || '正在保留剧情收尾……', { indeterminate: true });
-        return;
-    }
-    if (payload.stage === 'transcoding') {
-        ui['video-export-frame'].src = 'about:blank';
-        showVideoExportProgress('实时渲染完成，正在封装 1080p60 MP4……', { progress: 0 });
-        return;
-    }
-    if (payload.stage === 'error') {
-        finishVideoExportUi({}, payload.message || '播放器报告了未知错误');
-    }
-}
-
 function renderTranslationReport(report, speakerChanges, jsonPath, csvPath) {
     const panel = ui['translation-report'];
     panel.replaceChildren();
@@ -1792,9 +1537,7 @@ function updateActionAvailability() {
     // Editing can start from the loaded Japanese JSON. If no translation CSV
     // exists yet, playEditScenario creates and archives a blank working copy.
     ui['play-edit'].disabled = !loaded;
-    ui['export-video'].disabled = VIDEO_EXPORT_FROZEN || !csvMatchesCurrent || state.videoExportActive;
-    ui['export-video-browser'].disabled = VIDEO_EXPORT_FROZEN || !csvMatchesCurrent || state.videoExportActive;
-    ui['obs-test'].disabled = VIDEO_EXPORT_FROZEN;
+    window.SSVOfflineExport?.refreshAvailability();
 }
 
 ui['fetch-scenario'].addEventListener('click', fetchScenario);
@@ -1809,40 +1552,9 @@ ui['translation-related'].addEventListener('click', switchTranslationRelatedScen
 ui['build-translation'].addEventListener('click', buildTranslatedJson);
 ui['play-chinese'].addEventListener('click', playChineseScenario);
 ui['play-edit'].addEventListener('click', playEditScenario);
-ui['export-video'].addEventListener('click', exportChineseVideoObs);
-ui['export-video-browser'].addEventListener('click', exportChineseVideoBrowser);
-ui['obs-test'].addEventListener('click', testObsConnection);
-ui['video-export-cancel'].addEventListener('click', async () => {
-    if (!state.videoExportJob) return;
-    ui['video-export-cancel'].disabled = true;
-    try {
-        const endpoint = state.videoExportBackend === 'obs'
-            ? './api/obs-export/cancel'
-            : './api/video-export/cancel';
-        await apiPost(endpoint, { jobId: state.videoExportJob, error: '用户取消了视频直出' });
-        finishVideoExportUi({}, '用户取消了视频直出');
-    } catch (error) {
-        setGlobalStatus(`取消直出失败：${error.message}`, 'error');
-    } finally {
-        ui['video-export-cancel'].disabled = false;
-    }
-});
-ui['video-export-unlock'].addEventListener('click', () => {
-    const frameWindow = ui['video-export-frame'].contentWindow;
-    if (frameWindow && typeof frameWindow.__startScenarioExportFromWorkshop === 'function') {
-        frameWindow.__startScenarioExportFromWorkshop();
-    } else {
-        setGlobalStatus('后台播放器还没有准备好，请稍等一秒再点。', 'error');
-    }
-});
-
 window.addEventListener('message', (event) => {
     if (event.origin !== window.location.origin) return;
     const payload = event.data;
-    if (payload && payload.type === 'ssv-video-export') {
-        handleVideoExportMessage(payload);
-        return;
-    }
     if (!payload || payload.type !== 'ssv-translation-saved') return;
     if (payload.eventType !== state.eventType || payload.eventId !== state.eventId) return;
     try {
