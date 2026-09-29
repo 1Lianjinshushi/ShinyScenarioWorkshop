@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-09-19T05:07:28+00:00",
+  "generatedAt": "2026-09-29T15:15:38+00:00",
   "cards": {
     "3004027": {
       "cardName": "【食堂のリトルアイドル】",
@@ -12021,6 +12021,16 @@
       "cardId": "1040090150",
       "label": "果穗P卡・【げっと！！！】",
       "source": "shinycolors.moe/card-event-id"
+    },
+    "3008029": {
+      "cardName": "【心の交わる場所】",
+      "rawCardName": "【心の交わる場所】幽谷霧子",
+      "characterId": "008",
+      "characterName": "雾子",
+      "cardType": "Support",
+      "cardId": "2040080230",
+      "label": "雾子S卡・【心の交わる場所】",
+      "source": "shinycolors.moe/card-event-id"
     }
   },
   "activities": {
@@ -12508,15 +12518,20 @@
       "label": "第97次组活-水组组活",
       "unitLabel": "水组组活",
       "source": "scenario-speaker-scan"
+    },
+    "098": {
+      "label": "第98次组活-安提卡组活",
+      "unitLabel": "安提卡组活",
+      "source": "scenario-speaker-scan"
     }
   },
   "errors": [
-    "仍有 6 张卡尚无资料站卡名：2009022, 3002030, 3008029, 3011027, 3015028, 3025026"
+    "仍有 7 张卡尚无资料站卡名：2006020, 2021017, 3002030, 3004028, 3009027, 3011027, 3027013"
   ],
   "stats": {
-    "knownCardGroups": 1098,
-    "namedCardGroups": 1092,
-    "knownActivityGroups": 97,
-    "namedActivityGroups": 97
+    "knownCardGroups": 1103,
+    "namedCardGroups": 1096,
+    "knownActivityGroups": 98,
+    "namedActivityGroups": 98
   }
 }

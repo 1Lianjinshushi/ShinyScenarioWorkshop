@@ -1,5 +1,18 @@
 # Changelog
 
+## 20260929-r15 — 2026-09-29
+
+- Restore the complete game-update workflow in the public portable build: bundle
+  `ShinyScenarioUpdateMonitor.user.js`, retain the Install/Update Listener and
+  Open Game controls, and start recipients in live-listener mode instead of the
+  old snapshot-only mode. Personal listener status, unread markers, resource
+  requests, credentials and story-specific game assets remain excluded.
+- Document the Tampermonkey installation and first-baseline workflow for shared
+  copies. Clarify that official-session checks require the recipient's own game
+  tab and local workshop server to run together.
+- Include the latest local resource preflight fix and refreshed scenario/card/
+  speaker metadata available at release time.
+
 ## 20260919-r14 — 2026-09-19
 
 - Add a Bilibili illustrated FFmpeg installation link to the background-export

@@ -78,7 +78,8 @@ class AdvResourceConverter {
     }
 
     // Return a flat list of unique URLs to preload.
-    extractResourceList(convertedTracks) {
+    extractResourceList(convertedTracks, options = {}) {
+        const includeLogTextFrames = options.includeLogTextFrames !== false;
         const assetKeys = Object.keys(this._assetFormat);
         const list = [];
         for (const t of convertedTracks) {
@@ -88,7 +89,10 @@ class AdvResourceConverter {
             if (t.charStill)    list.push(t.charStill);
             if (t.charSpine)    list.push(t.charSpine);
             if (t.speakerIcon)  list.push(t.speakerIcon);
-            if (t.logTextFrame) list.push(t.logTextFrame);
+            // The scenario log is not opened or captured by background direct
+            // export.  Its decorative frame therefore is not a hard playback
+            // dependency there; the live viewer keeps the original behaviour.
+            if (includeLogTextFrames && t.logTextFrame) list.push(t.logTextFrame);
             if (t.gameEventCommunicationMovie) list.push(t.gameEventCommunicationMovie);
             if (t.gameEventCommunicationSe)    list.push(t.gameEventCommunicationSe);
         }

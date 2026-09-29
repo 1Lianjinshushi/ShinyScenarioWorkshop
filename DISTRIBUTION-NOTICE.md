@@ -21,7 +21,7 @@ regular idols/collaboration characters/Hazuki/president, four interaction
 sounds, and tap-effect data.
 The exact list is recorded in `portable-runtime-assets.json`.
 
-The 20260919-r14 builder also includes local copies of Node.js, Playwright,
+The 20260929-r15 builder also includes local copies of Node.js, Playwright,
 and playwright-core for experimental background export. FFmpeg and FFprobe are
 excluded by default; the explicit `-BundleOfflineRuntime` option adds them only
 after the publisher's redistribution review. Notices are described in
@@ -43,7 +43,9 @@ resource caching, audio-channel fixes, card/still playback fixes, choice and End
 continuation handling, Support-card local still fallback, font selection hooks,
 community Support-card still retrieval, local Produce-card MP4 fallback,
 batch translation import, adaptive high-DPI rendering, and Windows portable
-startup. Portable builds also include a snapshot of the resource-library
-catalogue and update-log UI. The private official-game asset-map listener is not
-distributed in portable builds. The catalogue contains resource identifiers and
-labels only; it does not bundle the corresponding story-specific game assets.
+startup. Complete portable builds also include a cleaned baseline of the
+resource-library catalogue, the update-log UI, and the userscript that connects
+the recipient's own logged-in game tab to the local workshop. The script does
+not include session credentials, does not provide access to the publisher's
+account, and does not bundle story-specific game assets. Each recipient must
+install it in a userscript manager and use their own game session.

@@ -10,12 +10,20 @@ const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
 const builder = read('build-portable.ps1');
 const launcher = read('start-portable.cmd');
 
-test('r14 portable builder cannot silently replace r12 or an existing package', () => {
-    assert.match(builder, /\$Version = '20260919-r14'/);
+test('r15 portable builder cannot silently replace r12 or an existing package', () => {
+    assert.match(builder, /\$Version = '20260929-r15'/);
     assert.match(builder, /\$Version -eq '20260907-r12'/);
     assert.match(builder, /Package target already exists/);
     assert.doesNotMatch(builder, /Remove-Item -LiteralPath \$PackageRoot/);
     assert.doesNotMatch(builder, /Remove-Item -LiteralPath \$ZipPath/);
+});
+
+test('complete portable build includes the game listener and its UI entry', () => {
+    assert.match(builder, /Copy-RequiredDirectory 'scripts'/);
+    assert.doesNotMatch(builder, /Copy-RequiredDirectory 'scripts' @\('ShinyScenarioUpdateMonitor\.user\.js'\)/);
+    assert.match(builder, /missing the game-update userscript/);
+    assert.match(builder, /missing the userscript installation entry/);
+    assert.doesNotMatch(builder, /SSV_PORTABLE_LIBRARY_SNAPSHOT = true/);
 });
 
 test('portable bundle includes the standalone offline-export PDF guide', () => {

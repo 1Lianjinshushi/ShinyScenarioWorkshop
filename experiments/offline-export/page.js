@@ -19,7 +19,11 @@ const manifest = () => {
         ...(proof.raw.some(t => t.select) ? [1, 2, 3].map(n =>
             [`selectFrame${n}`, `./assets/images/event/select_frame/00${n}.png`]) : []),
         ...(proof.raw.some(t => t.select) ? [['choiceTransition', './assets/movies/choice_branch_return.mp4']] : []),
-        ...converter.extractResourceList(tracks).map(url => [url, url]),
+        // Direct export never opens ScenarioLogLayer.  Requiring its optional
+        // decorative frame can reject an otherwise complete story (some frame
+        // IDs have no valid log variant and the log layer already has a
+        // Graphics fallback).  Keep every actual playback asset mandatory.
+        ...converter.extractResourceList(tracks, { includeLogTextFrames: false }).map(url => [url, url]),
     ];
 };
 proof.describe = (raw, options = {}) => {

@@ -1,5 +1,5 @@
 param(
-    [string]$Version = '20260919-r14',
+    [string]$Version = '20260929-r15',
     [string]$OutputDirectory = (Join-Path (Split-Path -Parent $PSScriptRoot) 'release'),
     [string]$NodeExecutable = 'C:\Users\Lenovo\AppData\Local\Programs\nodejs-v24.20.0\node.exe',
     [string]$NodeLicense = 'C:\Users\Lenovo\AppData\Local\Programs\nodejs-v24.20.0\LICENSE',
@@ -132,7 +132,7 @@ $files = @(
 )
 foreach ($file in $files) { Copy-RequiredFile $file }
 foreach ($directory in @('lib', 'speaker', 'metadata', 'monitor')) { Copy-RequiredDirectory $directory }
-Copy-RequiredDirectory 'scripts' @('ShinyScenarioUpdateMonitor.user.js')
+Copy-RequiredDirectory 'scripts'
 
 # Only the production worker dependency graph belongs in a portable build.
 # The experiment README, local diagnostics, proof runners, and developer paths
@@ -157,10 +157,10 @@ if ($BundleOfflineRuntime) {
     Copy-ExternalFile (Join-Path $FFmpegDirectory 'README.txt') 'tools/licenses/ffmpeg-README.txt'
 }
 
-# Keep the public resource-library/update-log snapshot while removing the
+# Keep the public resource-library/update-log baseline while removing the
 # developer machine's live listener status, pending official-resource queue,
-# and unread markers. Recipients start with a clean snapshot rather than
-# inheriting the maintainer's personal monitoring state.
+# unread markers and any old snapshot-only flag. Each recipient starts clean,
+# then the bundled userscript can maintain that recipient's own live state.
 $portableMonitorStatePath = Join-Path $PackageRoot 'monitor\game-update-state.json'
 if ([IO.File]::Exists($portableMonitorStatePath)) {
     $portableMonitorState = Get-Content -LiteralPath $portableMonitorStatePath -Raw | ConvertFrom-Json
@@ -171,7 +171,7 @@ if ([IO.File]::Exists($portableMonitorStatePath)) {
     }
     $portableMonitorState.listenerStatus = [PSCustomObject]@{}
     $portableMonitorState.resourceRequests = [PSCustomObject]@{}
-    $portableMonitorState | Add-Member -NotePropertyName portableSnapshot -NotePropertyValue $true -Force
+    $portableMonitorState.PSObject.Properties.Remove('portableSnapshot')
     [IO.File]::WriteAllText(
         $portableMonitorStatePath,
         (($portableMonitorState | ConvertTo-Json -Depth 100 -Compress) + "`n"),
@@ -206,24 +206,6 @@ $offlineToolNotice = if ($BundleOfflineRuntime) {
 }
 
 $portableAppHtmlPath = Join-Path $PackageRoot 'app.html'
-$portableAppHtml = [IO.File]::ReadAllText($portableAppHtmlPath)
-$portableAppHtml = [Text.RegularExpressions.Regex]::Replace(
-    $portableAppHtml,
-    '\s*<a class="button-link primary" href="\./scripts/ShinyScenarioUpdateMonitor\.user\.js">.*?</a>',
-    '',
-    [Text.RegularExpressions.RegexOptions]::Singleline
-)
-$portableAppHtml = [Text.RegularExpressions.Regex]::Replace(
-    $portableAppHtml,
-    '\s*<a class="button-link" href="https://shinycolors\.enza\.fun/".*?</a>',
-    '',
-    [Text.RegularExpressions.RegexOptions]::Singleline
-)
-$portableAppHtml = $portableAppHtml.Replace(
-    '<script src="./scripts/GameUpdateMonitorCore.js"></script>',
-    '<script>globalThis.SSV_PORTABLE_LIBRARY_SNAPSHOT = true;</script>' + "`r`n    " + '<script src="./scripts/GameUpdateMonitorCore.js"></script>'
-)
-[IO.File]::WriteAllText($portableAppHtmlPath, $portableAppHtml, $Utf8)
 
 Write-PackageText 'PORTABLE-README.txt' @"
 Shiny Scenario Workshop Portable Edition $Version
@@ -235,8 +217,9 @@ Shiny Scenario Workshop Portable Edition $Version
    The workshop can fetch resources, play the Japanese original, merge translations, and open the editing mode.
    Loading a scenario starts a background local cache automatically. Playback uses local files first and downloads only missing resources.
    If a Support-card still is missing upstream, select a local game screenshot in the repair panel.
-5. The resource library and update-log snapshot are included. The private game-update listener is not distributed in this portable build.
-6. Close the server window to stop the application.
+5. The resource library baseline and the game-update userscript are included. Install Tampermonkey first, then use the workshop's Install/Update Listener Script button and open the game once to establish this computer's baseline.
+6. Keep both the workshop server and the game tab running when official game-session resource checks are needed.
+7. Close the server window to stop the application.
 
 For a short illustrated Chinese guide and the version maintenance log, open Quick-Guide-ZH.pdf in this folder.
 For FFmpeg/FFprobe setup and background video export, open Offline-Export-Guide-ZH.pdf.
@@ -307,11 +290,14 @@ if ((Get-ChildItem -LiteralPath (Join-Path $PackageRoot 'experiments\offline-exp
         Where-Object { $offlineRuntimeFiles -cnotcontains $_ }) {
     throw 'Non-runtime experiment files were included in the portable build.'
 }
-if ([IO.File]::Exists((Join-Path $PackageRoot 'scripts\ShinyScenarioUpdateMonitor.user.js'))) {
-    throw 'The private game-update listener must not be included in portable builds.'
+if (-not [IO.File]::Exists((Join-Path $PackageRoot 'scripts\ShinyScenarioUpdateMonitor.user.js'))) {
+    throw 'The complete portable build is missing the game-update userscript.'
 }
-if (-not [IO.File]::ReadAllText($portableAppHtmlPath).Contains('SSV_PORTABLE_LIBRARY_SNAPSHOT')) {
-    throw 'Portable resource-library snapshot mode was not enabled.'
+if ([IO.File]::ReadAllText($portableAppHtmlPath).Contains('SSV_PORTABLE_LIBRARY_SNAPSHOT')) {
+    throw 'The complete portable build must not enable snapshot-only mode.'
+}
+if (-not [IO.File]::ReadAllText($portableAppHtmlPath).Contains('./scripts/ShinyScenarioUpdateMonitor.user.js')) {
+    throw 'The complete portable build is missing the userscript installation entry.'
 }
 
 $manifest = Get-ChildItem -LiteralPath $PackageRoot -Recurse -File |
