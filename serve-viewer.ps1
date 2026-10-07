@@ -16,6 +16,7 @@ $SpeakerCsv = Join-Path $SpeakerRoot 'speaker.csv'
 $MetadataRoot = Join-Path $ProjectRoot 'metadata'
 $ScenarioMetadataCache = Join-Path $MetadataRoot 'scenario-titles.json'
 $LibraryGroupMetadataCache = Join-Path $MetadataRoot 'scenario-library-groups.json'
+$CardIdentityCache = Join-Path $MetadataRoot 'card-identities.json'
 # LOCAL_MONITOR_BEGIN
 $MonitorRoot = Join-Path $ProjectRoot 'monitor'
 $MonitorState = Join-Path $MonitorRoot 'game-update-state.json'
@@ -137,6 +138,7 @@ function New-MonitorState {
         entries = @{}
         metadata = @{}
         cardResources = @{}
+        resourceRequests = @{}
         listenerStatus = @{}
         lastEnrichmentAt = ''
         enrichmentStatus = @{}
@@ -254,6 +256,12 @@ function Read-MonitorState {
                 $state.cardResources[$property.Name] = ConvertTo-MonitorHashtable $property.Value
             }
         }
+        $state.resourceRequests = @{}
+        if ($null -ne $raw.resourceRequests) {
+            foreach ($property in $raw.resourceRequests.PSObject.Properties) {
+                $state.resourceRequests[$property.Name] = ConvertTo-MonitorHashtable $property.Value
+            }
+        }
         $previousVersion = $(if ($null -ne $raw.version) { [int]$raw.version } else { 1 })
         return Update-MonitorStateSchema $state $previousVersion
     } catch {
@@ -290,7 +298,10 @@ function ConvertTo-ValidatedMonitorRow([object]$Value) {
 
 function Merge-MonitorRows([object]$Base, [object]$Extra) {
     $result = ConvertTo-MonitorHashtable $Base
+    $incoming = ConvertTo-MonitorHashtable $Extra
+    $preserveOfficial = $result.metadataSource -eq 'official-game-api' -and $incoming.metadataSource -ne 'official-game-api'
     foreach ($key in (ConvertTo-MonitorHashtable $Extra).Keys) {
+        if ($preserveOfficial -and $key -in @('metadataSource','cardName','storyTitle','cardId','cardType','cardRarity') -and $result[$key]) { continue }
         $value = (ConvertTo-MonitorHashtable $Extra)[$key]
         if ($null -ne $value -and ([string]$value) -ne '') { $result[$key] = $value }
     }
@@ -338,13 +349,95 @@ function Add-MonitorCardResource([object]$State, [object]$Row, [bool]$OfficialIn
     $cardId = ([string]$source.cardId).Trim()
     if (-not $cardType -or -not $cardId) { return $source }
     $key = "$cardType/$cardId"
-    if ($State.cardResources.ContainsKey($key)) { return Merge-MonitorRows $source $State.cardResources[$key] }
+    if ($State.cardResources.ContainsKey($key)) {
+        $resource = ConvertTo-MonitorHashtable $State.cardResources[$key]
+        # Resource keys are Produce/cardId or Support/cardId, not scenario keys.
+        # Never move a scenario into the card-resource namespace when merging.
+        $resource.Remove('key')
+        $source = Merge-MonitorRows $source $resource
+        $status = ([string]$source.staticCardStatus).Trim()
+        $source.pageImplementationStatus = $(if ($status -eq 'available') { 'available' } elseif ($status -eq 'missing') { 'missing' } else { 'pending' })
+        return $source
+    }
     if ($OfficialInventoryComplete) {
         $source.staticCardStatus = 'missing'
         $source.dynamicCardStatus = $(if ($cardType -eq 'Produce') { 'missing' } else { 'not-applicable' })
+        $source.pageImplementationStatus = 'missing'
         $source.implementationSource = 'official-game-asset-map'
     }
     return $source
+}
+
+function Get-MonitorScenarioCardGroup([object]$Row) {
+    $source = ConvertTo-MonitorHashtable $Row
+    $eventId = ([string]$source.eventId).Trim()
+    if (([string]$source.eventType).Trim() -ne 'produce_events' -or $eventId -notmatch '^[23]\d{8}$') { return '' }
+    return $eventId.Substring(0, 7)
+}
+
+function Get-MonitorResourceCharacter([object]$Resource) {
+    $source = ConvertTo-MonitorHashtable $Resource
+    $cardType = ([string]$source.cardType).Trim()
+    $cardId = ([string]$source.cardId).Trim()
+    $pattern = $(if ($cardType -eq 'Produce') { '^10[2-5](\d{3})\d{3}0$' } elseif ($cardType -eq 'Support') { '^20[3-4](\d{3})\d{3}0$' } else { '' })
+    if ($pattern -and $cardId -match $pattern) { return $Matches[1] }
+    return ''
+}
+
+function Get-MonitorResourceCorrelations(
+    [object]$ExistingEntries,
+    [object[]]$ObservationRows,
+    [object]$CardResources,
+    [string[]]$NewResourceKeys
+) {
+    $existing = ConvertTo-MonitorHashtable $ExistingEntries
+    $resourcesByKey = ConvertTo-MonitorHashtable $CardResources
+    $assignedCardIds = New-Object Collections.Generic.HashSet[string]
+    foreach ($value in $existing.Values) {
+        $row = ConvertTo-MonitorHashtable $value
+        $cardId = ([string]$row.cardId).Trim()
+        if ($cardId) { [void]$assignedCardIds.Add($cardId) }
+    }
+
+    $groups = @{}
+    foreach ($value in @($ObservationRows)) {
+        $row = ConvertTo-MonitorHashtable $value
+        $groupKey = Get-MonitorScenarioCardGroup $row
+        $cardType = ([string]$row.cardType).Trim()
+        $characterId = ([string]$row.characterId).Trim()
+        $cardId = ([string]$row.cardId).Trim()
+        if ($cardId) { [void]$assignedCardIds.Add($cardId); continue }
+        if (-not $groupKey -or $cardType -notin @('Produce', 'Support') -or -not $characterId) { continue }
+        $key = ([string]$row.key).Trim()
+        if (-not $key) { $key = "$($row.eventType)/$($row.eventId)" }
+        $old = $(if ($existing.ContainsKey($key)) { ConvertTo-MonitorHashtable $existing[$key] } else { $null })
+        $currentUpdate = $null -eq $old -or ([string]$old.updateDetectedAt).Trim() -or ([string]$old.updateKind).Trim() -in @('scenario', 'preload', 'recovered')
+        if (-not $currentUpdate) { continue }
+        $signature = "$cardType/$characterId"
+        if (-not $groups.ContainsKey($signature)) { $groups[$signature] = @{} }
+        $groups[$signature][$groupKey] = $row
+    }
+
+    $resourceCandidates = @{}
+    foreach ($resourceKey in @($NewResourceKeys)) {
+        if (-not $resourcesByKey.ContainsKey($resourceKey)) { continue }
+        $resource = ConvertTo-MonitorHashtable $resourcesByKey[$resourceKey]
+        $cardId = ([string]$resource.cardId).Trim()
+        $cardType = ([string]$resource.cardType).Trim()
+        $characterId = Get-MonitorResourceCharacter $resource
+        if (-not $cardId -or $assignedCardIds.Contains($cardId) -or -not $characterId -or ([string]$resource.staticCardStatus).Trim() -ne 'available') { continue }
+        $signature = "$cardType/$characterId"
+        if (-not $resourceCandidates.ContainsKey($signature)) { $resourceCandidates[$signature] = New-Object Collections.Generic.List[string] }
+        if (-not $resourceCandidates[$signature].Contains($cardId)) { $resourceCandidates[$signature].Add($cardId) }
+    }
+
+    $correlations = @{}
+    foreach ($signature in $resourceCandidates.Keys) {
+        if (-not $groups.ContainsKey($signature) -or $groups[$signature].Count -ne 1 -or $resourceCandidates[$signature].Count -ne 1) { continue }
+        $groupKey = @($groups[$signature].Keys)[0]
+        $correlations[$groupKey] = $resourceCandidates[$signature][0]
+    }
+    return $correlations
 }
 
 function Get-MonitorPublicState([object]$State, [int]$Limit = $MaxMonitorEntries) {
@@ -432,12 +525,16 @@ function Save-GameUpdateObservation([object]$Payload) {
     $libraryMetadata = Read-JsonDataFile $LibraryGroupMetadataCache
     $libraryCards = ConvertTo-MonitorHashtable $(if ($null -ne $libraryMetadata) { $libraryMetadata.cards } else { @{} })
     $newKeys = New-Object Collections.Generic.List[string]
+    $newResourceKeys = New-Object Collections.Generic.List[string]
 
     foreach ($value in $rawResources) {
         if ($null -eq $value) { continue }
         $resource = ConvertTo-ValidatedCardResource $value
         $old = $(if ($state.cardResources.ContainsKey($resource.key)) { $state.cardResources[$resource.key] } else { @{} })
+        if ($wasInitialized -and -not $state.cardResources.ContainsKey($resource.key)) { $newResourceKeys.Add($resource.key) }
         $mergedResource = Merge-MonitorRows $old $resource
+        $mergedResource.firstSeenAt = $(if ($old.firstSeenAt) { $old.firstSeenAt } else { $now })
+        $mergedResource.lastSeenAt = $now
         $mergedResource.updatedAt = $now
         $state.cardResources[$resource.key] = $mergedResource
     }
@@ -451,10 +548,25 @@ function Save-GameUpdateObservation([object]$Payload) {
         $state.metadata[$row.key] = $merged
     }
 
+    $entryRows = New-Object Collections.Generic.List[object]
     foreach ($value in $rawEntries) {
         if ($null -eq $value) { continue }
         $row = Add-MonitorCardLibraryFields (ConvertTo-ValidatedMonitorRow $value) $libraryCards
         if ($state.metadata.ContainsKey($row.key)) { $row = Merge-MonitorRows $row $state.metadata[$row.key] }
+        $entryRows.Add($row)
+    }
+    $correlationRows = @($entryRows | ForEach-Object {
+        $row = $_
+        if ($state.metadata.ContainsKey($row.key)) { $row = Merge-MonitorRows $row $state.metadata[$row.key] }
+        $row
+    })
+    $correlations = Get-MonitorResourceCorrelations $state.entries $correlationRows $state.cardResources @($newResourceKeys)
+    foreach ($row in $entryRows) {
+        $groupKey = Get-MonitorScenarioCardGroup $row
+        if ($groupKey -and $correlations.ContainsKey($groupKey) -and -not ([string]$row.cardId).Trim()) {
+            $row.cardId = $correlations[$groupKey]
+            $row.implementationSource = 'official-game-asset-delta'
+        }
         $row = Add-MonitorCardResource $state $row $officialInventoryComplete
         if (-not $state.entries.ContainsKey($row.key)) {
             $row.firstSeenAt = $now
@@ -519,10 +631,18 @@ function Save-GameUpdateObservation([object]$Payload) {
     $state.lastObservedAt = $now
     $state.assetVersion = ([string]$Payload.assetVersion).Substring(0, [Math]::Min(100, ([string]$Payload.assetVersion).Length))
     Write-MonitorState $state
+    Save-MonitorOfficialMetadata @($rawMetadata)
+    foreach ($group in $correlations.Keys) {
+        $kind = if ($group[0] -eq '2') { 'produce-still' } else { 'support-still' }
+        $null = Request-OfficialCardResource $kind $correlations[$group]
+    }
+    $state = Read-MonitorState
     $public = Get-MonitorPublicState $state
     $public.baselineCreated = -not $wasInitialized
     $public.newCount = $newKeys.Count
     $public.newKeys = @($newKeys)
+    $public.resourceCorrelationCount = $correlations.Count
+    $public.resourceCorrelationGroups = @($correlations.Keys | Sort-Object)
     return $public
 }
 
@@ -1208,7 +1328,7 @@ function Handle-ApiRequest([IO.Stream]$Stream, [object]$Request) {
         return
     }
     if ($Request.Method -eq 'POST' -and $Request.Path -eq '/api/rebuild-scenario-library-labels') {
-        Write-JsonResponse $Stream (Get-ScenarioLibraryLabels)
+        Write-JsonResponse $Stream (Update-PortableLibraryLabels)
         return
     }
     # LOCAL_MONITOR_END
@@ -1236,14 +1356,26 @@ function Handle-ApiRequest([IO.Stream]$Stream, [object]$Request) {
     if ($Request.Method -eq 'POST' -and $Request.Path -eq '/api/fetch-card-resource') {
         $kind = Get-QueryValue $Request.Query 'kind'
         $cardId = Get-QueryValue $Request.Query 'id'
-        Write-JsonResponse $Stream (Fetch-CommunityCardResource $kind $cardId)
+        $result = Fetch-CommunityCardResource $kind $cardId
+        Complete-OfficialResourceRequest $kind $cardId
+        Write-JsonResponse $Stream $result
+        return
+    }
+    if ($Request.Method -eq 'GET' -and $Request.Path -eq '/api/official-card-resource-requests') {
+        Write-JsonResponse $Stream (Get-OfficialCardResourceRequests)
+        return
+    }
+    if ($Request.Method -eq 'POST' -and $Request.Path -eq '/api/request-official-card-resource') {
+        Write-JsonResponse $Stream (Request-OfficialCardResource (Get-QueryValue $Request.Query 'kind') (Get-QueryValue $Request.Query 'id'))
         return
     }
     if ($Request.Method -eq 'POST' -and $Request.Path -eq '/api/import-official-card-resource') {
         $kind = Get-QueryValue $Request.Query 'kind'
         $cardId = Get-QueryValue $Request.Query 'id'
         $contentType = if ($Request.Headers.ContainsKey('Content-Type')) { $Request.Headers['Content-Type'] } else { '' }
-        Write-JsonResponse $Stream (Import-OfficialCardResource $kind $cardId $Request.Body $contentType)
+        $result = Import-OfficialCardResource $kind $cardId $Request.Body $contentType
+        Complete-OfficialResourceRequest $kind $cardId
+        Write-JsonResponse $Stream $result
         return
     }
     if ($Request.Method -eq 'POST' -and $Request.Path -eq '/api/resource-cache-status') {
@@ -1324,6 +1456,8 @@ function Test-ViewerAlreadyRunning {
         return $response.StatusCode -eq 200 -and $response.Content -match 'Shiny Scenario Workshop'
     } catch { return $false }
 }
+
+. ([ScriptBlock]::Create([IO.File]::ReadAllText((Join-Path $PSScriptRoot 'scripts/PortableMetadata.ps1'), [Text.Encoding]::UTF8)))
 
 Ensure-SpeakerArchive
 if (Test-ViewerAlreadyRunning) {

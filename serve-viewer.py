@@ -615,6 +615,100 @@ def validate_monitor_card_resource(value: object) -> dict[str, str]:
     return row
 
 
+def monitor_scenario_card_group(row: dict[str, object]) -> str:
+    """Return the stable seven-digit group shared by one card's story rows."""
+    event_id = str(row.get("eventId") or "").strip()
+    if (
+        str(row.get("eventType") or "") != "produce_events"
+        or not re.fullmatch(r"[23]\d{8}", event_id)
+    ):
+        return ""
+    return event_id[:7]
+
+
+def monitor_card_resource_character(resource: dict[str, object]) -> str:
+    """Read the character portion of an official card resource id.
+
+    Scenario group numbers and card resource serials are different namespaces;
+    only the card type plus this character id is a valid cross-namespace key.
+    """
+    card_type = str(resource.get("cardType") or "")
+    card_id = str(resource.get("cardId") or "").strip()
+    pattern = r"10[2-5](\d{3})\d{3}0" if card_type == "Produce" else r"20[3-4](\d{3})\d{3}0"
+    match = re.fullmatch(pattern, card_id)
+    return match.group(1) if match else ""
+
+
+def correlate_monitor_resource_delta(
+    existing_entries: dict[str, object],
+    observation_rows: list[dict[str, object]],
+    card_resources: dict[str, object],
+    new_resource_keys: list[str] | set[str],
+) -> dict[str, str]:
+    """Join new scenario groups to new official resources when the join is unique.
+
+    This intentionally never compares a scenario group's trailing sequence with
+    a card resource's serial: those numbers are unrelated.  A correlation is
+    accepted only when one newly observed official resource and one unresolved
+    current-update scenario group share the same card type and character.
+    """
+    groups: dict[tuple[str, str], dict[str, dict[str, object]]] = {}
+    assigned_card_ids: set[str] = set()
+    for value in existing_entries.values():
+        if not isinstance(value, dict):
+            continue
+        card_id = str(value.get("cardId") or "").strip()
+        if card_id:
+            assigned_card_ids.add(card_id)
+
+    for row in observation_rows:
+        group_key = monitor_scenario_card_group(row)
+        card_type = str(row.get("cardType") or "").strip()
+        character_id = str(row.get("characterId") or "").strip()
+        card_id = str(row.get("cardId") or "").strip()
+        if card_id:
+            assigned_card_ids.add(card_id)
+            continue
+        if not group_key or card_type not in {"Produce", "Support"} or not character_id:
+            continue
+        key = str(row.get("key") or f"{row.get('eventType')}/{row.get('eventId')}")
+        old = existing_entries.get(key)
+        current_update = not isinstance(old, dict) or bool(
+            str(old.get("updateDetectedAt") or "").strip()
+            or str(old.get("updateKind") or "") in {"scenario", "preload", "recovered"}
+        )
+        if not current_update:
+            continue
+        groups.setdefault((card_type, character_id), {})[group_key] = row
+
+    resources: dict[tuple[str, str], list[str]] = {}
+    for resource_key in new_resource_keys:
+        resource = card_resources.get(str(resource_key))
+        if not isinstance(resource, dict):
+            continue
+        card_id = str(resource.get("cardId") or "").strip()
+        card_type = str(resource.get("cardType") or "").strip()
+        character_id = monitor_card_resource_character(resource)
+        if (
+            not card_id
+            or card_id in assigned_card_ids
+            or not character_id
+            or str(resource.get("staticCardStatus") or "") != "available"
+        ):
+            continue
+        resources.setdefault((card_type, character_id), []).append(card_id)
+
+    correlations: dict[str, str] = {}
+    for signature, resource_ids in resources.items():
+        candidate_groups = groups.get(signature, {})
+        unique_resources = sorted(set(resource_ids))
+        if len(candidate_groups) != 1 or len(unique_resources) != 1:
+            continue
+        group_key = next(iter(candidate_groups))
+        correlations[group_key] = unique_resources[0]
+    return correlations
+
+
 def monitor_card_library_fields(
     row: dict[str, object],
     cards: dict[str, object] | None = None,
@@ -819,20 +913,50 @@ def observe_game_updates(payload: dict[str, object]) -> dict[str, object]:
         metadata = state.setdefault("metadata", {})
         card_resources = state.setdefault("cardResources", {})
 
+        new_resource_keys: list[str] = []
         for value in raw_resources:
             resource = validate_monitor_card_resource(value)
-            old = card_resources.get(resource["key"], {})
-            card_resources[resource["key"]] = {**old, **resource, "updatedAt": observed_at}
+            old = card_resources.get(resource["key"])
+            if not isinstance(old, dict):
+                old = {}
+                if was_initialized:
+                    new_resource_keys.append(resource["key"])
+            card_resources[resource["key"]] = {
+                **old,
+                **resource,
+                "firstSeenAt": old.get("firstSeenAt") or observed_at,
+                "lastSeenAt": observed_at,
+                "updatedAt": observed_at,
+            }
 
         for value in raw_metadata:
             row = monitor_card_library_fields(validate_monitor_row(value), library_cards)
             old = metadata.get(row["key"], {})
             metadata[row["key"]] = {**old, **row, "updatedAt": observed_at}
 
+        entry_rows = [
+            monitor_card_library_fields(validate_monitor_row(value), library_cards)
+            for value in raw_entries
+        ]
+        # Official page asset paths contain exact card ids but no story ids.
+        # Correlate only the delta from this observation, and only when card
+        # type + character leaves one resource and one unresolved story group.
+        correlations = correlate_monitor_resource_delta(
+            entries,
+            [{**row, **metadata.get(str(row.get("key") or ""), {})} for row in entry_rows],
+            card_resources,
+            new_resource_keys,
+        )
+        if correlations:
+            for row in entry_rows:
+                group_key = monitor_scenario_card_group(row)
+                if group_key in correlations and not str(row.get("cardId") or "").strip():
+                    row["cardId"] = correlations[group_key]
+                    row["implementationSource"] = "official-game-asset-delta"
+
         new_keys: list[str] = []
         changed_keys: list[str] = []
-        for value in raw_entries:
-            row = monitor_card_library_fields(validate_monitor_row(value), library_cards)
+        for row in entry_rows:
             key = row["key"]
             combined = monitor_resource_fields(
                 state, {**row, **metadata.get(key, {})}, official_inventory_complete
@@ -866,6 +990,26 @@ def observe_game_updates(payload: dict[str, object]) -> dict[str, object]:
         state["lastObservedAt"] = observed_at
         state["assetVersion"] = str(payload.get("assetVersion") or "")[:100]
         write_monitor_state(state)
+    # Official card names used to remain only in the listener state. Persist
+    # them here so the library, CSV naming and future sessions share one cache.
+    captured_cards, captured_stories = monitor_card_metadata_snapshot({
+        str(index): validate_monitor_row(value)
+        for index, value in enumerate(raw_metadata)
+    })
+    if captured_stories:
+        store_scenario_metadata(captured_stories)
+    representative_by_card_id = {
+        str(row.get("cardId") or ""): str(row.get("eventId") or "")
+        for row in captured_stories
+        if str(row.get("cardId") or "") and str(row.get("eventId") or "")
+    }
+    for card in captured_cards.values():
+        representative = representative_by_card_id.get(str(card.get("cardId") or ""), "")
+        if representative:
+            persist_card_library_metadata(
+                representative, card.get("rawCardName", ""), card.get("cardId", ""),
+                str(card.get("source") or "official-game-api"),
+            )
     public = monitor_public_state(state)
     public.update({
         "baselineCreated": not was_initialized,
@@ -873,7 +1017,10 @@ def observe_game_updates(payload: dict[str, object]) -> dict[str, object]:
         "newKeys": new_keys,
         "implementationChangeCount": len(changed_keys),
         "implementationChangeKeys": changed_keys,
+        "resourceCorrelationCount": len(correlations),
+        "resourceCorrelationGroups": sorted(correlations),
     })
+    maybe_start_correlated_static_sync(correlations)
     maybe_start_monitor_enrichment()
     return public
 
@@ -1089,6 +1236,93 @@ def monitor_library_groups() -> tuple[set[str], dict[str, list[str]]]:
     return card_groups, activity_groups
 
 
+def monitor_entry_event_id(key: object, row: object) -> str:
+    """Return an event id without assuming how the monitor dictionary is keyed."""
+    if isinstance(row, dict):
+        event_id = str(row.get("eventId") or "").strip()
+        if event_id:
+            return event_id
+    text = str(key or "").strip()
+    return text.rsplit("/", 1)[-1] if "/" in text else text
+
+
+def monitor_card_id_for_event(event_id: str, entries: dict[str, object] | None = None) -> str:
+    """Read the exact page-game card id already correlated with a story group."""
+    if not re.fullmatch(r"[23]\d{8}", str(event_id or "")):
+        return ""
+    source = entries
+    if source is None:
+        loaded = read_monitor_state().get("entries") or {}
+        source = loaded if isinstance(loaded, dict) else {}
+    group_prefix = str(event_id)[:7]
+    card_ids = {
+        str(row.get("cardId") or "").strip()
+        for key, row in source.items()
+        if isinstance(row, dict)
+        and monitor_entry_event_id(key, row).startswith(group_prefix)
+        and str(row.get("cardId") or "").strip()
+    }
+    return next(iter(card_ids)) if len(card_ids) == 1 else ""
+
+
+def monitor_card_metadata_snapshot(
+    entries: dict[str, object],
+) -> tuple[dict[str, dict[str, str]], list[dict[str, str]]]:
+    """Convert captured official metadata into the two persistent name caches."""
+    cards: dict[str, dict[str, str]] = {}
+    stories: list[dict[str, str]] = []
+    for key, value in entries.items():
+        if not isinstance(value, dict):
+            continue
+        event_type = str(value.get("eventType") or "").strip()
+        event_id = monitor_entry_event_id(key, value)
+        if event_type != "produce_events" or not re.fullmatch(r"[23]\d{8}", event_id):
+            continue
+        card_name = str(value.get("cardName") or "").strip()
+        story_title = str(value.get("storyTitle") or "").strip()
+        card_id = str(value.get("cardId") or "").strip()
+        metadata_source = str(value.get("metadataSource") or "").strip()
+        # Third-party rows already have their own guarded cache/update path.
+        # Import only authoritative page-game captures here, otherwise every
+        # rebuild would rewrite older rich card records with monitor fallbacks.
+        if metadata_source != "official-game-api":
+            continue
+        source = "official-game-api"
+        if story_title:
+            row = {
+                "eventType": event_type,
+                "eventId": event_id,
+                "storyTitle": story_title,
+                "source": source or "monitor-metadata",
+            }
+            if card_name:
+                row["cardName"] = card_name
+            if card_id:
+                row["cardId"] = card_id
+            stories.append(row)
+        title = card_display_title(card_name)
+        if not title:
+            continue
+        group_prefix = event_id[:7]
+        existing = cards.get(group_prefix)
+        # Official page-game metadata has priority over a third-party fallback.
+        if existing and existing.get("source") == "official-game-api" and source != "official-game-api":
+            continue
+        character_id = event_id[1:4]
+        short_name = CHARACTER_ARCHIVE_INFO.get(character_id, (f"角色{character_id}", "", ()))[0]
+        cards[group_prefix] = {
+            "cardName": title,
+            "rawCardName": card_name,
+            "characterId": character_id,
+            "characterName": short_name,
+            "cardType": "Produce" if event_id.startswith("2") else "Support",
+            "cardId": card_id,
+            "label": f"{short_name}{'P卡' if event_id.startswith('2') else 'S卡'}・{title}",
+            "source": source or "monitor-metadata",
+        }
+    return cards, stories
+
+
 def card_metadata_from_idol_info(
     character_id: str,
     idol_info: object,
@@ -1267,7 +1501,14 @@ def rebuild_scenario_library_metadata() -> dict[str, object]:
     previous = read_library_group_metadata()
     previous_cards = previous.get("cards") if isinstance(previous.get("cards"), dict) else {}
     previous_activities = previous.get("activities") if isinstance(previous.get("activities"), dict) else {}
-    missing_card_groups = card_groups - set(previous_cards)
+    monitor_state = read_monitor_state()
+    monitor_entries = monitor_state.get("entries") or {}
+    if not isinstance(monitor_entries, dict):
+        monitor_entries = {}
+    monitor_cards, monitor_stories = monitor_card_metadata_snapshot(monitor_entries)
+    if monitor_stories:
+        store_scenario_metadata(monitor_stories)
+    missing_card_groups = card_groups - set(previous_cards) - set(monitor_cards)
     missing_activity_groups = {
         key: value for key, value in activity_groups.items()
         if key not in previous_activities
@@ -1277,6 +1518,9 @@ def rebuild_scenario_library_metadata() -> dict[str, object]:
     # A temporary network failure must not erase names found by an earlier scan.
     merged_cards = dict(previous_cards)
     merged_cards.update(cards)
+    # Captured official page-game metadata is authoritative and must be usable
+    # by the same "补全库名称" action without requiring another card-page visit.
+    merged_cards.update(monitor_cards)
     merged_activities = dict(previous_activities)
     merged_activities.update(activities)
     title_errors: list[str] = []
@@ -1289,16 +1533,14 @@ def rebuild_scenario_library_metadata() -> dict[str, object]:
     # one of its known stories has no title.  Query one representative story;
     # the DataSite detail response contains every commu belonging to the card.
     title_cache = read_scenario_metadata_cache()
-    monitor_entries = read_monitor_state().get("entries", {})
-    if not isinstance(monitor_entries, dict):
-        monitor_entries = {}
     card_groups_by_recency = sorted(
         card_groups,
         key=lambda group_prefix: max(
             (
                 str(metadata.get("firstDetectedAt") or metadata.get("updateDetectedAt") or "")
-                for event_id, metadata in monitor_entries.items()
-                if event_id.startswith(group_prefix) and isinstance(metadata, dict)
+                for key, metadata in monitor_entries.items()
+                if isinstance(metadata, dict)
+                and monitor_entry_event_id(key, metadata).startswith(group_prefix)
             ),
             default="",
         ),
@@ -1308,8 +1550,10 @@ def rebuild_scenario_library_metadata() -> dict[str, object]:
         next(
             (
                 event_id for event_id in sorted(
-                    event_id for event_id in monitor_entries
-                    if event_id.startswith(group_prefix)
+                    monitor_entry_event_id(key, metadata)
+                    for key, metadata in monitor_entries.items()
+                    if isinstance(metadata, dict)
+                    and monitor_entry_event_id(key, metadata).startswith(group_prefix)
                 )
                 if not str(
                     (title_cache.get(f"produce_events/{event_id}") or {}).get("storyTitle") or ""
@@ -1325,7 +1569,11 @@ def rebuild_scenario_library_metadata() -> dict[str, object]:
     if missing_title_representatives:
         with ThreadPoolExecutor(max_workers=4, thread_name_prefix="card-story-title") as executor:
             futures = {
-                executor.submit(fetch_card_detail_metadata, event_id): event_id
+                executor.submit(
+                    fetch_card_detail_metadata,
+                    event_id,
+                    monitor_card_id_for_event(event_id, monitor_entries),
+                ): event_id
                 for event_id in missing_title_representatives
             }
             for future in as_completed(futures):
@@ -1372,6 +1620,13 @@ def persist_card_library_metadata(
         cards = value.setdefault("cards", {})
         if not isinstance(cards, dict):
             cards = value["cards"] = {}
+        existing = cards.get(group_prefix)
+        if (
+            isinstance(existing, dict)
+            and str(existing.get("source") or "") == "official-game-api"
+            and source != "official-game-api"
+        ):
+            return
         cards[group_prefix] = {
             "cardName": title,
             "rawCardName": str(raw_card_name or "").strip(),
@@ -1457,11 +1712,19 @@ def public_scenario_library_labels(value: dict[str, object] | None = None) -> di
     # Very new resources may already have an official title in the listener
     # state before the persistent title cache has been updated.
     for key, metadata in (read_monitor_state().get("entries") or {}).items():
-        if not isinstance(metadata, dict) or key in stories:
+        if not isinstance(metadata, dict):
+            continue
+        event_type = str(metadata.get("eventType") or "").strip()
+        event_id = monitor_entry_event_id(key, metadata)
+        story_key = f"{event_type}/{event_id}" if event_type and event_id else str(key)
+        if story_key in stories:
             continue
         title = str(metadata.get("storyTitle") or "").strip()
         if title:
-            stories[str(key)] = {"storyTitle": title, "source": "official-game-api"}
+            stories[story_key] = {
+                "storyTitle": title,
+                "source": str(metadata.get("metadataSource") or "official-game-api"),
+            }
 
     result["stories"] = stories
     stats = dict(result.get("stats") or {})
@@ -1491,7 +1754,15 @@ def store_scenario_metadata(rows: list[dict[str, object]]) -> None:
     with SCENARIO_METADATA_LOCK:
         entries = read_scenario_metadata_cache()
         for row in cleaned:
-            entries[f"{row['eventType']}/{row['eventId']}"] = row
+            key = f"{row['eventType']}/{row['eventId']}"
+            existing = entries.get(key)
+            if (
+                isinstance(existing, dict)
+                and str(existing.get("source") or "") == "official-game-api"
+                and str(row.get("source") or "") != "official-game-api"
+            ):
+                continue
+            entries[key] = row
         atomic_write_text(
             SCENARIO_METADATA_CACHE,
             json.dumps({"version": 1, "entries": entries}, ensure_ascii=False, indent=2) + "\n",
@@ -1553,7 +1824,7 @@ def monitor_scenario_metadata(event_type: str, event_id: str) -> dict[str, str] 
     return None
 
 
-def fetch_card_detail_metadata(event_id: str) -> list[dict[str, str]]:
+def fetch_card_detail_metadata(event_id: str, exact_card_id: str = "") -> list[dict[str, str]]:
     match = re.fullmatch(r"([23])(\d{3})(\d{3})(\d{2})", event_id)
     if not match:
         return []
@@ -1574,15 +1845,27 @@ def fetch_card_detail_metadata(event_id: str) -> list[dict[str, str]]:
         and str(card.get("cardType") or "") not in excluded
         and str(card.get("cardUuid") or "")
     ]
+    exact_card_id = str(exact_card_id or monitor_card_id_for_event(event_id)).strip()
+    if exact_card_id:
+        # Resource correlation gives us the page game's real card id. Never
+        # replace that evidence with the old "Nth card" guess: when a mirror
+        # has not indexed the card yet, leave it pending for official metadata.
+        candidates = [
+            card for card in candidates
+            if str(card.get("enzaId") or "").strip() == exact_card_id
+        ]
+        if not candidates:
+            return []
     candidates.sort(key=lambda card: (
         str(card.get("releaseDate") or ""), int(card.get("cardIndex") or 0)
     ))
-    wanted_index = max(0, int(card_sequence) - 1)
-    candidate_positions = {id(card): index for index, card in enumerate(candidates)}
-    candidates.sort(key=lambda card: (
-        abs(candidate_positions.get(id(card), 9999) - wanted_index),
-        -int(card.get("cardIndex") or 0),
-    ))
+    if not exact_card_id:
+        wanted_index = max(0, int(card_sequence) - 1)
+        candidate_positions = {id(card): index for index, card in enumerate(candidates)}
+        candidates.sort(key=lambda card: (
+            abs(candidate_positions.get(id(card), 9999) - wanted_index),
+            -int(card.get("cardIndex") or 0),
+        ))
 
     endpoint = "pCardInfo" if produce else "sCardInfo"
     event_field = "cardIdolEvents" if produce else "cardSupportEvents"
@@ -1629,6 +1912,11 @@ def fetch_card_detail_metadata(event_id: str) -> list[dict[str, str]]:
                 })
             if rows:
                 store_scenario_metadata(rows)
+                first = rows[0]
+                persist_card_library_metadata(
+                    first.get("eventId", ""), first.get("cardName", ""),
+                    first.get("cardId", ""), "shinycolors.moe/card-event-id",
+                )
             if any(row["eventId"] == event_id for row in rows):
                 found = rows
                 break
@@ -1728,9 +2016,45 @@ def sync_datasite_card_resources(card_type: str, card_id: str) -> dict[str, str]
             result[sync_key] = "failed"
 
     sync_one(static_kind, "staticCardMirrorStatus", "staticCardSyncStatus", "staticCardSaved")
-    if produce:
-        sync_one("produce-movie", "dynamicCardMirrorStatus", "dynamicCardSyncStatus", "dynamicCardSaved")
     return result
+
+
+def sync_correlated_static_resources(correlations: dict[str, str]) -> None:
+    """Cache only small still images after a unique official delta match."""
+    for card_id in sorted(set(correlations.values())):
+        with MONITOR_STATE_LOCK:
+            state = read_monitor_state()
+            resource = next((
+                value for value in (state.get("cardResources") or {}).values()
+                if isinstance(value, dict) and str(value.get("cardId") or "") == card_id
+            ), None)
+        if not isinstance(resource, dict):
+            continue
+        card_type = str(resource.get("cardType") or "")
+        kind = "produce-still" if card_type == "Produce" else "support-still"
+        synced = sync_datasite_card_resources(card_type, card_id)
+        if str(synced.get("staticCardSyncStatus") or "") != "synced":
+            try:
+                request_official_card_resource(kind, card_id)
+            except Exception:
+                pass
+        with MONITOR_STATE_LOCK:
+            state = read_monitor_state()
+            resource_key = f"{card_type}/{card_id}"
+            current = (state.get("cardResources") or {}).get(resource_key)
+            if isinstance(current, dict):
+                current.update(synced)
+            for row in (state.get("entries") or {}).values():
+                if isinstance(row, dict) and str(row.get("cardId") or "") == card_id:
+                    row.update(synced)
+            write_monitor_state(state)
+
+
+def maybe_start_correlated_static_sync(correlations: dict[str, str]) -> bool:
+    if not correlations or MONITOR_STATE.parent.resolve() != MONITOR_ROOT.resolve():
+        return False
+    Thread(target=sync_correlated_static_resources, args=(dict(correlations),), daemon=True).start()
+    return True
 
 
 def apply_monitor_datasite_enrichment(rows: list[dict[str, str]], status: dict[str, object]) -> None:
@@ -1744,6 +2068,12 @@ def apply_monitor_datasite_enrichment(rows: list[dict[str, str]], status: dict[s
             key = row["key"]
             old_metadata = metadata.get(key, {})
             if old_metadata.get("metadataSource") == "official-game-api":
+                for name in (
+                    "cardName", "storyTitle", "cardId", "cardType", "cardRarity",
+                    "characterId", "characterName", "characterNameJp",
+                ):
+                    if str(old_metadata.get(name) or "").strip():
+                        row[name] = old_metadata[name]
                 row["metadataSource"] = "official-game-api"
             metadata[key] = monitor_resource_fields(
                 state, {**old_metadata, **row, "updatedAt": observed_at}
@@ -2339,7 +2669,20 @@ def complete_official_card_resource_request(kind: str, raw_id: object, saved: ob
             value["status"] = "ready"
             value["saved"] = str(saved or "")
             value["completedAt"] = utc_now()
-            write_monitor_state(state)
+        field_prefix = "dynamicCard" if kind in {"produce-movie", "produce-costume-movie"} else "staticCard"
+        card_type = "Support" if kind == "support-still" else "Produce"
+        resource = (state.get("cardResources") or {}).get(f"{card_type}/{card_id}")
+        sync_fields = {
+            f"{field_prefix}MirrorStatus": "available",
+            f"{field_prefix}SyncStatus": "synced",
+            f"{field_prefix}Saved": str(saved or ""),
+        }
+        if isinstance(resource, dict):
+            resource.update(sync_fields)
+        for row in (state.get("entries") or {}).values():
+            if isinstance(row, dict) and str(row.get("cardId") or "") == card_id:
+                row.update(sync_fields)
+        write_monitor_state(state)
 
 
 def fetch_community_card_resource(kind: str, raw_id: object) -> dict[str, object]:
@@ -2415,6 +2758,15 @@ def import_official_card_resource(
 
 class ViewerRequestHandler(SimpleHTTPRequestHandler):
     server_version = "ShinyScenarioViewer/1.0"
+
+    def guess_type(self, path: str) -> str:
+        content_type = super().guess_type(path)
+        if ";" not in content_type and (
+            content_type.startswith("text/")
+            or content_type in {"application/javascript", "application/json"}
+        ):
+            return f"{content_type}; charset=utf-8"
+        return content_type
 
     def end_headers(self) -> None:
         request_path = urlparse(self.path).path.lower()

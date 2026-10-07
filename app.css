@@ -429,6 +429,39 @@ button.primary:hover:not(:disabled) { background: linear-gradient(135deg, #ff78a
   line-height: 1.5;
 }
 .monitor-group-export { flex: 0 0 auto; min-height: 38px; }
+.monitor-card-resources {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid rgba(105,217,163,.2);
+  border-radius: 10px;
+  background: rgba(72,178,126,.035);
+}
+.monitor-card-resources.pending { grid-template-columns: auto 1fr; color: var(--muted); }
+.monitor-card-resource-heading,
+.monitor-card-resource,
+.monitor-card-resource-actions { display: flex; align-items: center; gap: 10px; }
+.monitor-card-resource-heading { justify-content: space-between; }
+.monitor-card-resource-heading code { color: #d9b8c7; }
+.monitor-card-resource { justify-content: space-between; padding-top: 8px; border-top: 1px solid var(--line); }
+.monitor-card-resource > div:first-child { display: grid; gap: 2px; }
+.monitor-card-resource b { color: var(--text); font-size: 12px; }
+.monitor-card-resource span { color: var(--muted); font-size: 11px; }
+.monitor-card-resource-actions { justify-content: flex-end; flex-wrap: wrap; }
+.monitor-card-resource-actions .button-link,
+.monitor-resource-upload span { min-height: 34px; padding: 7px 11px; font-size: 11px; }
+.monitor-resource-upload { position: relative; overflow: hidden; cursor: pointer; }
+.monitor-resource-upload input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.monitor-resource-upload span {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  background: #2a2634;
+  color: var(--text);
+  font-weight: 700;
+}
+.monitor-resource-upload:hover span { background: #343040; }
 .monitor-tree-root > .monitor-tree-children { padding-left: 13px; }
 .monitor-lazy-note { padding: 15px; color: var(--muted); font-size: 12px; text-align: center; }
 .monitor-collapse-float {
@@ -595,6 +628,8 @@ footer { padding: 22px 6px 0; color: var(--muted); font-size: 13px; }
   .monitor-row { grid-template-columns: 9px minmax(0, 1fr); }
   .monitor-use { grid-column: 2; justify-self: start; }
   .monitor-group-actions { align-items: stretch; flex-direction: column; }
+  .monitor-card-resource { align-items: flex-start; flex-direction: column; }
+  .monitor-card-resource-actions { justify-content: flex-start; }
   /* LOCAL_MONITOR_END */
   .support-still-preview { width: 100%; height: auto; aspect-ratio: 16 / 9; }
   .arrow { display: none; }

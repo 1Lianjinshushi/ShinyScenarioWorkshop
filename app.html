@@ -228,13 +228,14 @@
                     <span id="game-update-badge" class="badge">尚未建立基线</span>
                 </div>
                 <div class="monitor-actions">
-                    <a class="button-link primary" href="./scripts/ShinyScenarioUpdateMonitor.user.js">安装／更新监听脚本</a>
+                    <a class="button-link primary" href="./scripts/ShinyScenarioUpdateMonitor.user.js" target="_blank" rel="noopener noreferrer">安装／更新监听脚本</a>
                     <a class="button-link" href="https://shinycolors.enza.fun/" target="_blank" rel="noreferrer">打开页游并检查</a>
                     <button id="game-update-refresh">刷新列表</button>
                     <button id="game-update-rebuild-labels">补全全库名称</button>
                     <button id="game-update-acknowledge" disabled>全部标为已读</button>
                 </div>
-                <p id="game-update-note" class="monitor-note">安装脚本后打开一次页游，首次扫描只建立基线，不会把已有剧情全部报成更新。</p>
+                <p class="monitor-note monitor-install-note">Chrome 需先安装并启用 Tampermonkey 或 Violentmonkey；若扩展“详情”页提供“允许用户脚本”，也请将其打开。点击安装后若新标签页只显示脚本源码，说明脚本管理器缺失或未启用。</p>
+                <p id="game-update-note" class="monitor-note">安装／更新监听脚本后，只需刷新一次已登录的页游。脚本会被动读取资源清单，并结合公开主数据补全卡名与剧情标题；它不主动调用页游认证接口。首次扫描只建立基线，不会把已有剧情全部报成更新。</p>
                 <div id="game-update-list" class="monitor-list">
                     <div class="empty-state">等待页游监听脚本送来第一份资源清单。</div>
                 </div>

@@ -1,5 +1,33 @@
 # Changelog
 
+## 20261007-r16 — 2026-10-07
+
+- Harden the game-update listener as userscript 0.9.2. It no longer calls the
+  page game's authenticated card APIs during startup, no longer replaces
+  `Array.prototype.push`, and never wraps session-request resolvers. Restore
+  the temporary asset-loader probe as soon as the resource map is found. Serve
+  `.user.js` as UTF-8 JavaScript and explain the Tampermonkey/Violentmonkey and
+  Chrome "Allow user scripts" requirements when a browser only shows source.
+- Correlate newly observed story groups with exact page-game card IDs and use
+  that identity for public metadata/title completion instead of relying on the
+  old card-sequence guess. Refresh the bundled card, story-title and library
+  metadata, including the latest Sakuya Support card and its episode titles.
+- Add per-card resource controls to the update library: show static/dynamic
+  resource state, open the matched originals, and load a user-selected Produce
+  MP4 into the local cache. Small correlated stills may be cached automatically;
+  dynamic movies remain explicit user actions.
+- Support stories containing exactly one selectable option in background
+  export. Wait three seconds, choose it once, omit the branch-return transition,
+  and finish normally. Keep the existing middle-left-right flow for three
+  choices. Optional log-only frames no longer block a story that never opens
+  the log; visible dialogue-frame requirements remain enforced.
+- Ship the complete portable runtime, listener, refreshed metadata, guides,
+  Node.js and Playwright. Fonts, common UI, portraits and startup effects remain
+  bundled; FFmpeg/FFprobe and story-specific game assets remain user-supplied.
+- Bring the Windows PowerShell portable server's title completion, exact-ID
+  correlation and official-resource request/import endpoints into the sharing
+  build. Strip developer-machine cached-resource flags from its baseline.
+
 ## 20260929-r15 — 2026-09-29
 
 - Restore the complete game-update workflow in the public portable build: bundle

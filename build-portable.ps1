@@ -1,5 +1,5 @@
 param(
-    [string]$Version = '20260929-r15',
+    [string]$Version = '20261007-r16',
     [string]$OutputDirectory = (Join-Path (Split-Path -Parent $PSScriptRoot) 'release'),
     [string]$NodeExecutable = 'C:\Users\Lenovo\AppData\Local\Programs\nodejs-v24.20.0\node.exe',
     [string]$NodeLicense = 'C:\Users\Lenovo\AppData\Local\Programs\nodejs-v24.20.0\LICENSE',
@@ -169,8 +169,17 @@ if ([IO.File]::Exists($portableMonitorStatePath)) {
             if ($entry.Value.PSObject.Properties['unread']) { $entry.Value.unread = $false }
         }
     }
+    foreach ($collectionName in @('entries', 'metadata', 'cardResources')) {
+        foreach ($entry in $portableMonitorState.$collectionName.PSObject.Properties) {
+            foreach ($field in @('staticCardSyncStatus', 'dynamicCardSyncStatus', 'staticCardSaved', 'dynamicCardSaved')) {
+                $entry.Value.PSObject.Properties.Remove($field)
+            }
+        }
+    }
     $portableMonitorState.listenerStatus = [PSCustomObject]@{}
     $portableMonitorState.resourceRequests = [PSCustomObject]@{}
+    $portableMonitorState.lastEnrichmentAt = ''
+    $portableMonitorState.enrichmentStatus = [PSCustomObject]@{}
     $portableMonitorState.PSObject.Properties.Remove('portableSnapshot')
     [IO.File]::WriteAllText(
         $portableMonitorStatePath,
@@ -303,6 +312,7 @@ if (-not [IO.File]::ReadAllText($portableAppHtmlPath).Contains('./scripts/ShinyS
 $manifest = Get-ChildItem -LiteralPath $PackageRoot -Recurse -File |
     ForEach-Object { $_.FullName.Substring($PackageRoot.Length + 1).Replace('\', '/') } |
     Sort-Object
+$manifest = @($manifest) + @('PACKAGE-CONTENTS.txt') | Sort-Object -Unique
 Write-PackageText 'PACKAGE-CONTENTS.txt' (($manifest -join "`r`n") + "`r`n")
 
 # A portable build must never retain the developer machine's absolute paths.

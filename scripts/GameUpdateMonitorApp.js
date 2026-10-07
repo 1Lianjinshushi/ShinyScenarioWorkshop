@@ -209,6 +209,79 @@
         if (button) button.addEventListener('click', () => exportScenarioGroup(node, button));
     }
 
+    function cardResourceMarkup(node) {
+        if (!['produce-card', 'support-card'].includes(node.category)) return '';
+        const row = (node.children || []).find(item => item.cardId) || {};
+        const cardId = String(row.cardId || '');
+        if (!cardId) {
+            return `<section class="monitor-card-resources pending">
+                <strong>本卡资源</strong><span>尚未取得卡资源 ID；剧情仍可先行翻译。</span>
+            </section>`;
+        }
+        const produce = node.category === 'produce-card';
+        const staticPath = String(row.staticCardPath || (produce
+            ? `images/content/idols/card/${cardId}.jpg`
+            : `images/content/support_idols/card/${cardId}.jpg`));
+        const staticUrl = `https://cf-static.shinycolors.moe/${staticPath}`;
+        const dynamicPath = produce
+            ? String(row.dynamicCardPath || `movies/idols/card/${cardId}.mp4`) : '';
+        const dynamicUrl = dynamicPath ? `https://cf-static.shinycolors.moe/${dynamicPath}` : '';
+        const staticStatus = row.staticCardSyncStatus === 'synced'
+            ? '已匹配并缓存到本地'
+            : row.staticCardStatus === 'available' ? '页游资源已匹配' : '页游资源待检测';
+        const dynamicStatus = row.dynamicCardSyncStatus === 'synced'
+            ? '已载入本地 MP4'
+            : row.dynamicCardStatus === 'available' ? '页游资源已匹配；不后台下载' : '页游资源待检测';
+        const movie = produce ? `<div class="monitor-card-resource" data-resource-kind="produce-movie" data-resource-path="${escapeHtml(dynamicPath)}">
+            <div><b>动态卡图 MP4</b><span>${escapeHtml(dynamicStatus)}</span></div>
+            <div class="monitor-card-resource-actions">
+                <a class="button-link" href="${escapeHtml(dynamicUrl)}" target="_blank" rel="noopener noreferrer">打开 MP4 原文件</a>
+                <label class="monitor-resource-upload"><input type="file" accept=".mp4,video/mp4"><span>${row.dynamicCardSyncStatus === 'synced' ? '替换本地 MP4' : '载入本地 MP4'}</span></label>
+            </div>
+        </div>` : '';
+        return `<section class="monitor-card-resources" data-card-id="${escapeHtml(cardId)}">
+            <div class="monitor-card-resource-heading"><strong>本卡资源</strong><code>${escapeHtml(cardId)}</code></div>
+            <div class="monitor-card-resource" data-resource-kind="${produce ? 'produce-still' : 'support-still'}" data-resource-path="${escapeHtml(staticPath)}">
+                <div><b>静态卡图 JPG</b><span>${escapeHtml(staticStatus)}</span></div>
+                <div class="monitor-card-resource-actions">
+                    <a class="button-link" href="${escapeHtml(staticUrl)}" target="_blank" rel="noopener noreferrer">打开卡图原文件</a>
+                </div>
+            </div>${movie}
+        </section>`;
+    }
+
+    function bindCardResourceActions(container) {
+        container.querySelectorAll('.monitor-resource-upload input').forEach(input => {
+            input.addEventListener('change', async () => {
+                const file = input.files && input.files[0];
+                const resource = input.closest('.monitor-card-resource');
+                const path = resource && resource.dataset.resourcePath || '';
+                const label = input.nextElementSibling;
+                if (!file || !path) return;
+                const previous = label.textContent;
+                input.disabled = true;
+                label.textContent = '正在载入…';
+                try {
+                    if (!/\.mp4$/i.test(file.name) && file.type !== 'video/mp4') throw new Error('请选择 MP4 文件');
+                    if (!file.size || file.size > 120 * 1024 * 1024) throw new Error('MP4 必须小于 120 MB');
+                    const response = await fetch(`./api/cache-resource?path=${encodeURIComponent(path)}`, {
+                        method: 'POST', headers: { 'Content-Type': 'application/octet-stream' }, body: file,
+                    });
+                    const result = await response.json().catch(() => ({}));
+                    if (!response.ok) throw new Error(result.error || `HTTP ${response.status}`);
+                    label.textContent = '已载入本地 MP4';
+                    note.textContent = `动态卡图已保存到 assets/${path}；播放和直出会优先使用该文件。`;
+                } catch (error) {
+                    label.textContent = previous;
+                    note.textContent = `动态卡图载入失败：${error.message}`;
+                } finally {
+                    input.disabled = false;
+                    input.value = '';
+                }
+            });
+        });
+    }
+
     function countText(node) {
         const total = Number(node.totalCount || 0);
         if (node.kind === 'scenario-group') {
@@ -257,10 +330,11 @@
                 const childContainer = details.querySelector(':scope > .monitor-tree-children');
                 const depth = Number(details.dataset.depth || 0) + 1;
                 if (node.kind === 'scenario-group') {
-                    childContainer.innerHTML = groupExportMarkup(node)
+                    childContainer.innerHTML = cardResourceMarkup(node) + groupExportMarkup(node)
                         + node.children.map(row => childMarkup(row)).join('');
                     bindUseButtons(childContainer);
                     bindGroupExport(childContainer, node);
+                    bindCardResourceActions(childContainer);
                 } else {
                     childContainer.innerHTML = node.children.length
                         ? node.children.map(child => treeMarkup(child, depth, openKeys)).join('')
@@ -289,7 +363,7 @@
             row.updateDetectedAt || '', row.updateKind || '',
             row.cardName || '', row.storyTitle || '', row.activityLabel || '',
             row.pageImplementationStatus || '', row.activityImplementationStatus || '',
-            row.staticCardStatus || '',
+            row.cardId || '', row.staticCardStatus || '', row.dynamicCardStatus || '',
         ]);
         return JSON.stringify({
             initialized: Boolean(data.initialized),
@@ -324,7 +398,7 @@
                 : '本便携包不含页游监听脚本，当前也没有可读取的资源库快照。'
             : data.initialized
                 ? `最近扫描：${localTime(data.lastObservedAt)}　资源版本：${data.assetVersion || '未报告'}。监听脚本每 10 分钟检查；存在待实装卡时还会在每天 23:02 专门复查。页游标签不必置于前台，但不能被浏览器休眠或丢弃。${enrichmentText}`
-                : listenerText || '安装脚本后打开一次页游，首次扫描只建立基线，不会把已有剧情全部报成更新。';
+                : listenerText || '安装／更新监听脚本后，只需刷新一次已登录的页游。脚本会被动读取资源清单，并结合公开主数据补全卡名与剧情标题；它不主动调用页游认证接口。首次扫描只建立基线，不会把已有剧情全部报成更新。';
 
         const rows = applyLibraryLabels(data.items);
         const signature = contentSignature(data, rows);

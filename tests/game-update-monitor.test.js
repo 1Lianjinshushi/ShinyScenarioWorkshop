@@ -58,6 +58,23 @@ assert.strictEqual(supportCard.characterName, '月冈恋钟');
 assert.strictEqual(supportCard.cardSequence, '027');
 assert.strictEqual(supportCard.groupCode, '3004027__');
 
+// The story-group sequence and the page-game card resource serial are separate
+// namespaces.  Sakuya's current support card is group 3006028, while its
+// verified resource id is 2040060210; Core must keep the group at seven digits.
+const sakuyaLatestSupport = monitor.classifyScenario('produce_events', '300602801');
+assert.strictEqual(sakuyaLatestSupport.category, 'support-card');
+assert.strictEqual(sakuyaLatestSupport.characterName, '白濑咲耶');
+assert.strictEqual(sakuyaLatestSupport.cardSequence, '028');
+assert.strictEqual(sakuyaLatestSupport.storySequence, '01');
+assert.strictEqual(sakuyaLatestSupport.groupKey, 'produce_events/3006028');
+assert.strictEqual(sakuyaLatestSupport.groupCode, '3006028__');
+assert.strictEqual(
+    monitor.childDisplayLine({
+        eventType: 'produce_events', eventId: '300602801', storyTitle: '『良いこと』の予感',
+    }),
+    '300602801 · 01.『良いこと』の予感',
+);
+
 const starsUnitProduce = monitor.classifyScenario('produce_events', '3000100101');
 assert.strictEqual(starsUnitProduce.category, 'unit-produce');
 assert.strictEqual(starsUnitProduce.unitId, 'stars');

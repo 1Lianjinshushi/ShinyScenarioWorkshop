@@ -9,7 +9,8 @@ const OfflineFlow = {
             track.text || track.select || track.movie || track.gameEventCommunicationMovie ? [index] : []);
     },
     choiceOrder(items) {
-        if (items.length !== 3) throw new Error('This trial requires exactly three choices');
+        if (items.length === 1) return items.slice();
+        if (items.length !== 3) throw new Error('This trial requires exactly one or three choices');
         const byX = items.slice().sort((a, b) => a.x - b.x);
         return [byX[1], byX[0], byX[2]];
     },

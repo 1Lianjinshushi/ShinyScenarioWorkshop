@@ -21,5 +21,4 @@ popup_idol.png
 popup_te.png
 # LOCAL_MONITOR_BEGIN
 monitor/game-update-state.json
-scripts/ShinyScenarioUpdateMonitor.user.js
 # LOCAL_MONITOR_END

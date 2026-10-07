@@ -19,7 +19,8 @@ test('story progress counts each branch node once and ignores return transitions
 test('choices are ordered by actual screen position, not assumed source order', () => {
     const left = { x: 212 }, mid = { x: 564 }, right = { x: 912 };
     assert.deepEqual(flow.choiceOrder([right, mid, left]), [mid, left, right]);
-    assert.throws(() => flow.choiceOrder([left, right]), /exactly three/);
+    assert.deepEqual(flow.choiceOrder([left]), [left]);
+    assert.throws(() => flow.choiceOrder([left, right]), /exactly one or three/);
 });
 test('preview begins at the second preceding text, retaining intervening silent nodes', () => {
     assert.equal(flow.previewStart([{ text: 'a' }, {}, { text: 'b' }, {}, { text: 'c' }, { select: '1' }]), 2);

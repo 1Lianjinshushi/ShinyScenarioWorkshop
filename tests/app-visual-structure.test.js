@@ -7,6 +7,7 @@ const test = require('node:test');
 const root = path.join(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'app.html'), 'utf8');
 const css = fs.readFileSync(path.join(root, 'app.css'), 'utf8');
+const monitorApp = fs.readFileSync(path.join(root, 'scripts', 'GameUpdateMonitorApp.js'), 'utf8');
 
 test('workshop visual hierarchy keeps the three existing work areas', () => {
     assert.match(html, /class="panel fetch-panel"/);
@@ -17,6 +18,9 @@ test('workshop visual hierarchy keeps the three existing work areas', () => {
     assert.match(css, /\.fetch-grid\s*\{[^}]*border:/s);
     assert.match(css, /\.offline-export-panel\[open\]/);
     assert.match(css, /\.monitor-library\s*\{[^}]*border-top:/s);
+    assert.match(monitorApp, /function cardResourceMarkup\(node\)/);
+    assert.match(monitorApp, /载入本地 MP4/);
+    assert.match(css, /\.monitor-card-resources\s*\{/);
 });
 
 test('workshop controls retain focus, reduced-motion, and narrow-screen treatments', () => {
@@ -33,4 +37,11 @@ test('background export links to the FFmpeg installation article in a new tab', 
     assert.match(html, /<a class="button-link" href="https:\/\/www\.bilibili\.com\/read\/cv33507583\/" target="_blank" rel="noopener noreferrer">FFmpeg 安装图文教程 ↗<\/a>/);
     assert.match(html, /<code>ffprobe\.exe<\/code> 放进工坊 <code>tools<\/code>/);
     assert.match(css, /\.offline-export-install \.button-link\s*\{/);
+});
+
+test('listener install opens in a new tab and explains Chrome userscript setup', () => {
+    assert.match(html, /<a class="button-link primary" href="\.\/scripts\/ShinyScenarioUpdateMonitor\.user\.js" target="_blank" rel="noopener noreferrer">安装／更新监听脚本<\/a>/);
+    assert.match(html, /Chrome 需先安装并启用 Tampermonkey 或 Violentmonkey/);
+    assert.match(html, /扩展“详情”页提供“允许用户脚本”/);
+    assert.match(html, /新标签页只显示脚本源码，说明脚本管理器缺失或未启用/);
 });

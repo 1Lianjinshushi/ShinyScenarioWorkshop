@@ -66,8 +66,8 @@ cross-computer operation or settle the redistributor's obligations for the exact
 FFmpeg binary and its dependencies, including corresponding-source availability.
 
 <!-- LOCAL_MONITOR_BEGIN -->
-The development workspace's optional `scripts/ShinyScenarioUpdateMonitor.user.js`
-is not included in portable builds. It uses a rewritten
+The optional `scripts/ShinyScenarioUpdateMonitor.user.js` is included in complete
+portable builds from r15 onward. It uses a rewritten
 runtime interception approach informed by
 [`biuuu/ShinyColors`](https://github.com/biuuu/ShinyColors), Copyright (c) 2019
 biuuu, licensed under the MIT License. Its upstream license is reproduced in

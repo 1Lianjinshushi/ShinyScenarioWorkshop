@@ -10,8 +10,18 @@ const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
 const builder = read('build-portable.ps1');
 const launcher = read('start-portable.cmd');
 
-test('r15 portable builder cannot silently replace r12 or an existing package', () => {
-    assert.match(builder, /\$Version = '20260929-r15'/);
+test('portable metadata adapter and clean cache flags ship with the server', () => {
+    assert.match(read('serve-viewer.ps1'), /scripts\/PortableMetadata.ps1/);
+    assert.match(read('serve-viewer.ps1'), /\/api\/official-card-resource-requests/);
+    assert.match(read('serve-viewer.ps1'), /Update-PortableLibraryLabels/);
+    for (const name of ['staticCardSyncStatus', 'dynamicCardSyncStatus', 'staticCardSaved', 'dynamicCardSaved']) {
+        assert.ok(builder.includes(name));
+    }
+    assert.match(builder, /@\('PACKAGE-CONTENTS.txt'\)/);
+});
+
+test('r16 portable builder cannot silently replace r12 or an existing package', () => {
+    assert.match(builder, /\$Version = '20261007-r16'/);
     assert.match(builder, /\$Version -eq '20260907-r12'/);
     assert.match(builder, /Package target already exists/);
     assert.doesNotMatch(builder, /Remove-Item -LiteralPath \$PackageRoot/);

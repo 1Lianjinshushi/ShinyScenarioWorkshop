@@ -36,7 +36,7 @@ function validateRequest(item) {
     const tracks = JSON.parse(item.content.replace(/^\uFEFF/, ''));
     if (!Array.isArray(tracks) || !tracks.length || tracks.length > 20000 || tracks.some(t => !t || typeof t !== 'object' || Array.isArray(t))) throw new Error('不是有效的剧情轨道数组');
     const choices = tracks.filter(t => t.select);
-    if (choices.length && choices.length !== 3) throw new Error('试验版目前仅支持一组三选项；两选项、嵌套或多组选项暂不支持');
+    if (choices.length !== 0 && choices.length !== 1 && choices.length !== 3) throw new Error('试验版目前仅支持单选项或一组三选项；两选项、嵌套或多组选项暂不支持');
     return { eventId: item.eventId, eventType: item.eventType, language: item.language || 'ja', mode,
         content: item.content, fingerprint: crypto.createHash('sha256').update(JSON.stringify([item.content, mode, item.language || 'ja', item.eventType])).digest('hex') };
 }

@@ -21,6 +21,8 @@ function fixture(t) {
 }
 test('requests accept immutable JSON snapshots, reject malformed IDs/modes/branch counts', () => {
     assert.equal(validateRequest(item()).eventId, '4902005026');
+    assert.equal(validateRequest({ ...item(), content: JSON.stringify([{ select: 'only', nextLabel: 'end' }]) }).eventId,
+        '4902005026');
     for (const patch of [{ eventId: '../123456' }, { eventType: '../data' }, { mode: 'shell' }, { language: 'x' },
         { content: '{}' }, { content: '[null]' }, { content: '[]' }, { mode: 'branch-preview' },
         { content: JSON.stringify([{ select: 'a' }, { select: 'b' }]) }]) assert.throws(() => validateRequest({ ...item(), ...patch }));

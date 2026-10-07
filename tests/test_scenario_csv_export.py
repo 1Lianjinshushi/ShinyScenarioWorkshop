@@ -133,6 +133,177 @@ class ScenarioCsvExportTests(unittest.TestCase):
         self.assertEqual(result["2010020"]["cardId"], "1040100140")
         self.assertEqual(result["2010020"]["source"], "shinycolors.moe/card-event-id")
 
+    def test_prefixed_monitor_keys_are_resolved_to_event_ids(self) -> None:
+        entries = {
+            "produce_events/200602001": {
+                "eventType": "produce_events", "eventId": "200602001",
+                "cardId": "1040060140",
+            },
+            "produce_events/200602002": {
+                "eventType": "produce_events", "eventId": "200602002",
+                "cardId": "1040060140",
+            },
+            "produce_events/300602801": {
+                "eventType": "produce_events", "eventId": "300602801",
+                "cardId": "2040060210",
+            },
+            "produce_events/300602802": {
+                "eventType": "produce_events", "eventId": "300602802",
+                "cardId": "2040060210",
+            },
+            "produce_events/300602803": {
+                "eventType": "produce_events", "eventId": "300602803",
+                "cardId": "2040060210",
+            },
+        }
+        self.assertEqual(
+            SERVER.monitor_entry_event_id("produce_events/200602001", entries["produce_events/200602001"]),
+            "200602001",
+        )
+        self.assertEqual(SERVER.monitor_card_id_for_event("200602002", entries), "1040060140")
+        self.assertEqual(
+            SERVER.monitor_entry_event_id(
+                "produce_events/300602801", entries["produce_events/300602801"]
+            ),
+            "300602801",
+        )
+        self.assertEqual(SERVER.monitor_card_id_for_event("300602802", entries), "2040060210")
+
+    def test_latest_sakuya_support_titles_use_the_verified_card_id(self) -> None:
+        idol_info = {
+            "cardLists": [
+                {
+                    "cardType": "S_SSR", "cardUuid": "older-sakuya-card",
+                    "enzaId": "2040060190", "releaseDate": "2026-07-01", "cardIndex": 27,
+                },
+                {
+                    "cardType": "S_SSR", "cardUuid": "verified-sakuya-card",
+                    "enzaId": "2040060210", "releaseDate": "2026-08-19", "cardIndex": 28,
+                },
+            ],
+        }
+        detail = {
+            "cardName": "【かっこよさの定義】白瀬咲耶",
+            "enzaId": "2040060210",
+            "cardSupportEvents": [
+                {"eventId": "300602801", "eventName": "『良いこと』の予感"},
+                {"eventId": "300602802", "eventName": "『かっこよく楽しむ』こと"},
+                {"eventId": "300602803", "eventName": "『キミ』も絶対に"},
+            ],
+        }
+
+        def response(url: str, **_kwargs: object) -> object:
+            return detail if "sCardInfo" in url else idol_info
+
+        with tempfile.TemporaryDirectory() as folder, patch.object(
+            SERVER, "SCENARIO_METADATA_CACHE", Path(folder) / "titles.json"
+        ), patch.object(
+            SERVER, "LIBRARY_GROUP_METADATA_CACHE", Path(folder) / "groups.json"
+        ), patch.object(
+            SERVER, "CARD_IDENTITY_CACHE", Path(folder) / "cards.json"
+        ), patch.object(SERVER, "request_public_json", side_effect=response) as request:
+            rows = SERVER.fetch_card_detail_metadata("300602801", "2040060210")
+
+        self.assertEqual(
+            [(row["eventId"], row["storyTitle"]) for row in rows],
+            [
+                ("300602801", "『良いこと』の予感"),
+                ("300602802", "『かっこよく楽しむ』こと"),
+                ("300602803", "『キミ』も絶対に"),
+            ],
+        )
+        self.assertTrue(all(row["cardName"] == "【かっこよさの定義】白瀬咲耶" for row in rows))
+        self.assertTrue(all(row["cardId"] == "2040060210" for row in rows))
+        requested = [str(call.args[0]) for call in request.call_args_list]
+        self.assertTrue(any("sCardInfo?cardId=verified-sakuya-card" in url for url in requested))
+        self.assertFalse(any("cardId=older-sakuya-card" in url for url in requested))
+
+    def test_exact_card_id_prevents_sequence_guess_fallback(self) -> None:
+        idol_info = {
+            "cardLists": [{
+                "cardType": "P_SSR", "cardUuid": "older-card",
+                "enzaId": "1040060130", "releaseDate": "2026-08-01", "cardIndex": 1,
+            }],
+        }
+        with patch.object(SERVER, "request_public_json", return_value=idol_info) as request:
+            rows = SERVER.fetch_card_detail_metadata("200602001", "1040060140")
+        self.assertEqual(rows, [])
+        self.assertEqual(request.call_count, 1)
+
+    def test_exact_card_id_fetches_only_the_correlated_card(self) -> None:
+        idol_info = {
+            "cardLists": [
+                {
+                    "cardType": "P_SSR", "cardUuid": "older-card",
+                    "enzaId": "1040060130", "releaseDate": "2026-08-01", "cardIndex": 1,
+                },
+                {
+                    "cardType": "P_SSR", "cardUuid": "exact-card",
+                    "enzaId": "1040060140", "releaseDate": "2026-09-29", "cardIndex": 2,
+                },
+            ],
+        }
+        detail = {
+            "cardName": "【新卡】白瀬咲耶", "enzaId": "1040060140",
+            "cardIdolEvents": [{"eventId": "200602001", "eventName": "第一话"}],
+        }
+
+        def response(url: str, **_kwargs: object) -> object:
+            return detail if "pCardInfo" in url else idol_info
+
+        with tempfile.TemporaryDirectory() as folder, patch.object(
+            SERVER, "SCENARIO_METADATA_CACHE", Path(folder) / "titles.json"
+        ), patch.object(
+            SERVER, "LIBRARY_GROUP_METADATA_CACHE", Path(folder) / "groups.json"
+        ), patch.object(
+            SERVER, "CARD_IDENTITY_CACHE", Path(folder) / "cards.json"
+        ), patch.object(SERVER, "request_public_json", side_effect=response) as request:
+            rows = SERVER.fetch_card_detail_metadata("200602001", "1040060140")
+        self.assertEqual([row["storyTitle"] for row in rows], ["第一话"])
+        requested = [str(call.args[0]) for call in request.call_args_list]
+        self.assertTrue(any("cardId=exact-card" in url for url in requested))
+        self.assertFalse(any("cardId=older-card" in url for url in requested))
+
+    def test_official_monitor_metadata_builds_persistent_card_and_story_rows(self) -> None:
+        cards, stories = SERVER.monitor_card_metadata_snapshot({
+            "produce_events/202101701": {
+                "eventType": "produce_events", "eventId": "202101701",
+                "cardId": "1040210110", "cardName": "【Hug？】樋口 円香",
+                "storyTitle": "人情", "metadataSource": "official-game-api",
+            },
+        })
+        self.assertEqual(cards["2021017"]["label"], "圆香P卡・【Hug？】")
+        self.assertEqual(cards["2021017"]["source"], "official-game-api")
+        self.assertEqual(stories[0]["eventId"], "202101701")
+        self.assertEqual(stories[0]["storyTitle"], "人情")
+
+    def test_monitor_snapshot_ignores_third_party_fallback_rows(self) -> None:
+        cards, stories = SERVER.monitor_card_metadata_snapshot({
+            "produce_events/200602001": {
+                "eventType": "produce_events", "eventId": "200602001",
+                "cardId": "1040060140", "cardName": "镜像卡名",
+                "storyTitle": "镜像标题", "metadataSource": "shinycolors.moe",
+            },
+        })
+        self.assertEqual(cards, {})
+        self.assertEqual(stories, [])
+
+    def test_third_party_title_cannot_overwrite_official_title(self) -> None:
+        with tempfile.TemporaryDirectory() as folder, patch.object(
+            SERVER, "SCENARIO_METADATA_CACHE", Path(folder) / "titles.json"
+        ):
+            SERVER.store_scenario_metadata([{
+                "eventType": "produce_events", "eventId": "202101701",
+                "storyTitle": "官方标题", "source": "official-game-api",
+            }])
+            SERVER.store_scenario_metadata([{
+                "eventType": "produce_events", "eventId": "202101701",
+                "storyTitle": "资料站标题", "source": "shinycolors.moe",
+            }])
+            saved = SERVER.read_scenario_metadata_cache()["produce_events/202101701"]
+        self.assertEqual(saved["storyTitle"], "官方标题")
+        self.assertEqual(saved["source"], "official-game-api")
+
     def test_story_filename_rules(self) -> None:
         self.assertEqual(SERVER.csv_story_prefix("produce_events", "201002001"), "01")
         self.assertEqual(SERVER.csv_story_prefix("produce_events", "201002011"), "TE")
@@ -513,6 +684,70 @@ class ScenarioCsvExportTests(unittest.TestCase):
             self.assertEqual(row["implementationChanges"], "页游未实装")
             self.assertTrue(row["implementationAuditAt"])
             self.assertTrue(row["updateDetectedAt"])
+
+    def test_resource_delta_uniquely_correlates_story_group_without_reusing_preload(self) -> None:
+        with tempfile.TemporaryDirectory() as folder, patch.object(
+            SERVER, "MONITOR_STATE", Path(folder) / "state.json"
+        ), patch.object(
+            SERVER, "LIBRARY_GROUP_METADATA_CACHE", Path(folder) / "groups.json"
+        ):
+            # 羽那资源已经预埋在旧资产清单中，因此不是本轮资源增量。
+            SERVER.observe_game_updates({
+                "entries": [], "metadata": [],
+                "resources": [{
+                    "cardType": "Support", "cardId": "2040270140",
+                    "staticCardStatus": "available",
+                    "staticCardPath": "images/content/support_idols/card/2040270140.jpg",
+                    "dynamicCardStatus": "not-applicable",
+                }],
+                "assetVersion": "442",
+            })
+            result = SERVER.observe_game_updates({
+                "entries": [
+                    {"eventType": "produce_events", "eventId": "200602001", "cardType": "Produce", "characterId": "006"},
+                    {"eventType": "produce_events", "eventId": "200602002", "cardType": "Produce", "characterId": "006"},
+                    {"eventType": "produce_events", "eventId": "200602011", "cardType": "Produce", "characterId": "006"},
+                    {"eventType": "produce_events", "eventId": "302701301", "cardType": "Support", "characterId": "027"},
+                ],
+                "metadata": [],
+                "resources": [
+                    {"cardType": "Support", "cardId": "2040270140", "staticCardStatus": "available", "dynamicCardStatus": "not-applicable"},
+                    {"cardType": "Produce", "cardId": "1040060140", "staticCardStatus": "available", "dynamicCardStatus": "available"},
+                ],
+                "assetVersion": "443",
+            })
+            by_id = {row["eventId"]: row for row in result["items"]}
+        self.assertEqual(result["resourceCorrelationGroups"], ["2006020"])
+        self.assertEqual(by_id["200602001"]["cardId"], "1040060140")
+        self.assertEqual(by_id["200602001"]["pageImplementationStatus"], "available")
+        self.assertFalse(by_id["302701301"].get("cardId"))
+
+    def test_resource_delta_leaves_ambiguous_same_character_groups_unmatched(self) -> None:
+        rows = [
+            {"key": "produce_events/200602001", "eventType": "produce_events", "eventId": "200602001", "cardType": "Produce", "characterId": "006"},
+            {"key": "produce_events/200603001", "eventType": "produce_events", "eventId": "200603001", "cardType": "Produce", "characterId": "006"},
+        ]
+        resources = {
+            "Produce/1040060140": {
+                "cardType": "Produce", "cardId": "1040060140", "staticCardStatus": "available",
+            },
+        }
+        result = SERVER.correlate_monitor_resource_delta({}, rows, resources, set(resources))
+        self.assertEqual(result, {})
+
+    def test_correlated_resource_sync_never_background_downloads_produce_movie(self) -> None:
+        calls: list[str] = []
+
+        def fake_fetch(kind: str, card_id: str) -> dict[str, object]:
+            calls.append(kind)
+            return {"saved": f"assets/fake/{card_id}.jpg"}
+
+        with patch.object(SERVER, "fetch_community_card_resource", side_effect=fake_fetch):
+            result = SERVER.sync_datasite_card_resources("Produce", "1040999990")
+        self.assertEqual(calls, ["produce-still"])
+        self.assertEqual(result["staticCardSyncStatus"], "synced")
+        self.assertEqual(result["dynamicCardSyncStatus"], "pending")
+        self.assertNotIn("dynamicCardSaved", result)
 
 
 if __name__ == "__main__":

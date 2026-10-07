@@ -18,7 +18,7 @@ const manifest = () => {
         [TAP_EFFECT_FEATHER_CONFIG_KEY, TAP_EFFECT_FEATHER_CONFIG_URL],
         ...(proof.raw.some(t => t.select) ? [1, 2, 3].map(n =>
             [`selectFrame${n}`, `./assets/images/event/select_frame/00${n}.png`]) : []),
-        ...(proof.raw.some(t => t.select) ? [['choiceTransition', './assets/movies/choice_branch_return.mp4']] : []),
+        ...(proof.choiceCount > 1 ? [['choiceTransition', './assets/movies/choice_branch_return.mp4']] : []),
         // Direct export never opens ScenarioLogLayer.  Requiring its optional
         // decorative frame can reject an otherwise complete story (some frame
         // IDs have no valid log variant and the log layer already has a
@@ -28,6 +28,7 @@ const manifest = () => {
 };
 proof.describe = (raw, options = {}) => {
     proof.raw = raw;
+    proof.choiceCount = raw.filter(t => t.select).length;
     proof.options = { trimEnd: true, branchPreview: false, endHoldSeconds: 2, diagnostics: false, ...options };
     if (!Number.isFinite(proof.options.endHoldSeconds) || proof.options.endHoldSeconds < 0)
         throw new Error('Invalid ending hold duration');
@@ -193,7 +194,7 @@ proof.installFlow = () => {
         if (manager?.currentTrack?.text && !this._selectList.active) {
             const previewEnd = proof.options.branchPreview && proof.choiceNumber === 2
                 && proof.branchTextCount === 2;
-            const finalBranch = !proof.raw.some(t => t.select) || proof.choiceNumber >= 3;
+            const finalBranch = proof.choiceNumber >= proof.choiceCount;
             const dialogueEnd = proof.options.trimEnd && finalBranch
                 && OfflineFlow.terminalDialogue(proof.raw, manager.currentIndex, manager._nextLabel);
             if (previewEnd || dialogueEnd) {
@@ -207,7 +208,7 @@ proof.installFlow = () => {
     proof.player._playTrack = function (track) {
         if (proof.ending || proof.endedAt != null) return;
         const index = this._trackManager.currentIndex;
-        if (index === proof.outroIndex && (!proof.raw.some(t => t.select) || proof.choiceNumber >= 3)) {
+        if (index === proof.outroIndex && proof.choiceNumber >= proof.choiceCount) {
             proof.complete('terminal-black-outro-omitted');
             return;
         }
@@ -225,10 +226,12 @@ proof.installFlow = () => {
         return original.call(this, track);
     };
     proof.player.on('end', () => {
-        if (proof.raw.some(t => t.select) && proof.choiceNumber < 3) proof.returnChoice();
+        if (proof.choiceNumber < proof.choiceCount) proof.returnChoice();
         else proof.complete('scenario-end');
     });
-    proof.player.on('choiceReturnLeadIn', () => { if (proof.choiceNumber < 3) proof.returnChoice(); });
+    proof.player.on('choiceReturnLeadIn', () => {
+        if (proof.choiceNumber < proof.choiceCount) proof.returnChoice();
+    });
     proof.player._selectList.on('appear', () => {
         proof.choiceReadyAt = null;
         proof.events.push({ kind: 'choice-appear', time: time(), cycle: proof.choiceNumber });
@@ -263,7 +266,7 @@ proof.complete = reason => {
     proof.events.push({ kind: 'export-complete', reason, time: time() });
 };
 proof.returnChoice = () => {
-    if (proof.returning || proof.player._choiceReturnTransitionPromise) return;
+    if (proof.choiceCount <= 1 || proof.returning || proof.player._choiceReturnTransitionPromise) return;
     proof.returning = true;
     proof.choiceReadyAt = null;
     proof.events.push({ kind: 'transition-start', time: time() });
@@ -283,10 +286,12 @@ proof.advanceChoices = () => {
         proof.events.push({ kind: 'choice-ready', time: time(), cycle: proof.choiceNumber });
     }
     if (time() - proof.choiceReadyAt < 3 - 1e-7) return;
-    const item = OfflineFlow.choiceOrder(list._items)[proof.choiceNumber];
+    const order = OfflineFlow.choiceOrder(list._items);
+    const item = order[proof.choiceNumber];
     if (!item) throw new Error('No next choice in middle-left-right sequence');
+    const position = order.length === 1 ? 'only' : ['middle', 'left', 'right'][proof.choiceNumber];
     proof.events.push({ kind: 'choice-click', time: time(), wait: time() - proof.choiceReadyAt,
-        position: ['middle', 'left', 'right'][proof.choiceNumber], text: item._textValue, label: item._ssvNextLabel });
+        position, text: item._textValue, label: item._ssvNextLabel });
     proof.choiceNumber++;
     proof.branchTextCount = 0;
     list._onSelectItem(item, item._textValue, item._ssvNextLabel, item._metadata);

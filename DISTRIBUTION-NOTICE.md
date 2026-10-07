@@ -7,9 +7,10 @@ The upstream player foundation and this fork's additions are identified in
 `README.upstream.md`.
 
 - License: GNU Affero General Public License version 3 (`LICENSE`).
-- Modification date: 2026-08-16.
-- This archive includes the corresponding source code for the modified viewer,
-  local workshop, launchers, and tests.
+- Modification date: 2026-10-07.
+- The Git repository and GitHub source archives include the modified viewer,
+  local workshop, launchers, and tests. The separately published Portable ZIP
+  contains the runnable viewer/workshop sources but omits development-only tests.
 - This is an unofficial fan-made tool and is not affiliated with or endorsed by
   Bandai Namco Entertainment, THE IDOLM@STER, or the original game service.
 - No warranty is provided.
@@ -21,7 +22,7 @@ regular idols/collaboration characters/Hazuki/president, four interaction
 sounds, and tap-effect data.
 The exact list is recorded in `portable-runtime-assets.json`.
 
-The 20260929-r15 builder also includes local copies of Node.js, Playwright,
+The 20261007-r16 builder also includes local copies of Node.js, Playwright,
 and playwright-core for experimental background export. FFmpeg and FFprobe are
 excluded by default; the explicit `-BundleOfflineRuntime` option adds them only
 after the publisher's redistribution review. Notices are described in

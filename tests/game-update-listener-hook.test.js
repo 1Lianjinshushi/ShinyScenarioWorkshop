@@ -14,6 +14,7 @@ fakeMovie.set(Buffer.from('ftyp'), 4);
 
 const sandbox = {
     console,
+    officialActionCalls: 0,
     setTimeout,
     clearTimeout,
     setInterval: () => 0,
@@ -37,7 +38,13 @@ const sandbox = {
                     kind: 'produce-movie', cardId: '1040270990',
                     path: 'movies/idols/card/1040270990.mp4',
                 }] : [] })
-                : JSON.stringify({ items: [] });
+                : options.url.includes('/api/game-update-observation')
+                    ? JSON.stringify({ items: [{
+                        eventType: 'produce_events', eventId: '200602001',
+                        characterId: '006', cardType: 'Produce', cardId: '1040060140',
+                        cardName: '', storyTitle: '',
+                    }] })
+                    : JSON.stringify({ items: [] });
         setTimeout(() => options.onload && options.onload({ status: 200, responseText }), 0);
     },
     GM_getValue(key, fallback) { return values.has(key) ? values.get(key) : fallback; },
@@ -46,7 +53,11 @@ const sandbox = {
     GM_registerMenuCommand(label, callback) { menus.set(label, callback); },
 };
 const context = vm.createContext(sandbox);
-vm.runInContext('window = this; unsafeWindow = this; window.open = function () {};', context);
+vm.runInContext(`
+window = this; unsafeWindow = this; window.open = function () {};
+nativeArrayPush = Array.prototype.push;
+nativeFunctionCall = Function.prototype.call;
+`, context);
 vm.runInContext(userscript, context, { filename: userscriptPath });
 
 // A different Webpack application is loaded first. The listener must not stop
@@ -65,10 +76,12 @@ vm.runInContext(`
 var c={};
 var assetUrls=[
   'json/produce_events/300502501.json','json/special_communications/101.json',
-  'images/content/support_idols/card/2040050120.jpg'
+  'json/produce_events/200602001.json',
+  'images/content/support_idols/card/2040050120.jpg',
+  'images/content/idols/card/1040060140.jpg'
 ];
 var m={
-  1:function(e,t,n){n(85674);n(9876)},
+  1:function(e,t,n){n(7654);n(7655);n(7656);n(85674);n(9876)},
   85674:function(e,t,n){
     'invalid path'; 'encryptPath'; 'ENABLE_CRYPTO';
     t.A=function(url){return url.replace('https://assets.example.test/', 'https://assets.example.test/encrypted/')};
@@ -81,16 +94,46 @@ var m={
       getLatestVersion:function(){return 'listener-test'}
     };
     t.A=f;
+  },
+  7654:function(e,t,n){
+    'characterAlbums/characters/';
+    t.A={
+      getCharacterAlbum:async function(id){
+        officialActionCalls++;
+        return {characterAlbum:{
+          produceIdols:[{id:'1040060140',name:'【未持有也可补全】白瀬咲耶'}],supportIdols:[]
+        }};
+      }
+    };
+  },
+  7655:function(e,t,n){
+    'userIdols/statusMax';
+    t.A={
+      get:async function(id){
+        officialActionCalls++;
+        return {idol:{
+          id:id,name:'【未持有也可补全】白瀬咲耶',rarity:4,character:{id:'006'},
+          produceIdolEvents:[{id:'200602001',title:'后台官方标题'}],produceAfterEvents:[]
+        }};
+      }
+    };
+  },
+  7656:function(e,t,n){
+    'userSupportIdols/statusMax';
+    t.A={
+      get:async function(id){officialActionCalls++;return {supportIdol:{id:id}};}
+    };
   }
 };
 function r(e){var t=c[e];if(void 0!==t)return t.exports;var n=c[e]={id:e,loaded:!1,exports:{}};return m[e].call(n.exports,n,n.exports,r),n.loaded=!0,n.exports}
 r(1);
-var apiCandidate={method:'GET',path:'/api/home',resolve:async function(value){return value}};
+var originalApiResolve=function(value){return value};
+var apiCandidate={method:'POST',path:'/api/session/update',resolve:originalApiResolve};
 [].push(apiCandidate);
-apiCandidate.resolve({body:{nested:{supportIdol:{
-  id:'2040050120',name:'【官方卡名】田中摩美々',character:{id:'005'},
-  produceSupportIdolEvents:[{id:'300502501',title:'官方单话名'}]
-}}}});
+var apiResolveIdentityPreserved=apiCandidate.resolve===originalApiResolve;
+var apiResolveResult=apiCandidate.resolve({body:{session:'unchanged'}});
+var arrayPushIdentityPreserved=Array.prototype.push===nativeArrayPush;
+var functionCallRestored=Function.prototype.call===nativeFunctionCall;
 `, context);
 
 setTimeout(() => {
@@ -117,14 +160,14 @@ setTimeout(() => {
     assert(observation, 'listener should send an observation after finding the manager');
     assert(observations.length >= 2);
     assert.strictEqual(observation.body.assetVersion, 'listener-test');
-    assert.strictEqual(observation.body.entries.length, 2);
+    assert.strictEqual(observation.body.entries.length, 3);
     const support = observation.body.entries.find(item => item.eventId === '300502501');
     assert.strictEqual(support.scenarioStatus, 'available');
     assert(['pending', 'available'].includes(support.metadataStatus));
     assert(['pending', 'available'].includes(support.staticCardStatus));
-    assert.strictEqual(observation.body.resources.length, 1);
-    assert.strictEqual(observation.body.resources[0].cardId, '2040050120');
-    assert.strictEqual(observation.body.resources[0].staticCardStatus, 'available');
+    assert.strictEqual(observation.body.resources.length, 2);
+    const initialSupportResource = observation.body.resources.find(item => item.cardId === '2040050120');
+    assert.strictEqual(initialSupportResource.staticCardStatus, 'available');
     const officialUpload = requests.find(item => item.url.includes('/api/import-official-card-resource')
         && item.url.includes('kind=produce-movie') && item.url.includes('id=1040270990'));
     assert(officialUpload, 'a queued playback request should download the official movie');
@@ -132,10 +175,19 @@ setTimeout(() => {
     assert(requests.some(item => item.officialFetch
         && item.url.includes('/encrypted/movies/idols/card/1040270990.mp4')));
     const latestObservation = observations[observations.length - 1];
-    const officialMetadata = latestObservation.body.metadata.find(item => item.eventId === '300502501');
-    assert.strictEqual(officialMetadata.cardName, '【官方卡名】田中摩美々');
-    assert.strictEqual(officialMetadata.storyTitle, '官方单话名');
-    assert.strictEqual(officialMetadata.metadataSource, 'official-game-api');
+    assert.strictEqual(vm.runInContext('officialActionCalls', context), 0,
+        'startup monitoring must not call authenticated page-game card APIs');
+    assert.strictEqual(vm.runInContext('arrayPushIdentityPreserved', context), true,
+        'the listener must never replace the page Array.prototype.push');
+    assert.strictEqual(vm.runInContext('apiResolveIdentityPreserved', context), true,
+        'the listener must not wrap a session request resolver');
+    assert.strictEqual(vm.runInContext('apiResolveResult.body.session', context), 'unchanged');
+    assert.strictEqual(vm.runInContext('functionCallRestored', context), true,
+        'the temporary loader probe must be restored as soon as the asset map is found');
+    assert.strictEqual(vm.runInContext('Array.prototype.push===nativeArrayPush', context), true,
+        'the native Array.prototype.push identity must still hold after async monitoring work');
+    assert.strictEqual(vm.runInContext('Function.prototype.call===nativeFunctionCall', context), true,
+        'the loader probe must remain restored after async monitoring work');
     const movie = latestObservation.body.resources.find(item => item.cardId === '1040270990');
     assert.strictEqual(movie.dynamicCardStatus, 'available');
     assert.strictEqual(movie.dynamicCardSyncStatus, 'synced');
