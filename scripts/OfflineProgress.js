@@ -97,6 +97,8 @@
     }
     function progressFor(job) {
         const p = job.progress || {};
+        if (p.waiting) return { ratio: null, text: (p.waitReason || '等待共享处理通道') + ' · 已等待 ' + Math.floor(p.waitSeconds || 0) + ' 秒' };
+        if (p.stage === 'verify') return { ratio: null, text: p.verifyPart || '正在检查成片' };
         if (p.stage === 'render') {
             const ratio = p.storyTotal > 0 ? Math.min(0.99, Math.max(0, Number(p.storyCompleted || 0) / p.storyTotal)) : null;
             const seconds = Number(p.videoSeconds || 0).toFixed(1);
@@ -119,10 +121,17 @@
         stage.textContent = stages[job.stage] || stages[job.state] || job.stage || job.state;
         head.append(title, stage);
         const meta = document.createElement('p'); meta.className = 'job-meta';
-        meta.textContent = [job.displayGroup, job.eventId, job.language === 'zh-cn' ? '汉化版' : '日文原版']
+        meta.textContent = [job.displayGroup, job.eventId, job.language === 'zh-cn' ? '汉化版' : '日文原版',
+            job.speedMode === 'high-speed' ? '高速模式' : '低负载模式',
+            job.progress?.stability?.upgraded || job.verification?.upgraded ? '自动检查 → 完整'
+                : job.verificationMode === 'auto' ? '自动检查（正常时快速）'
+                : job.verificationMode === 'quick' ? '仅快速检查' : '完整检查']
             .filter(Boolean).join(' · ');
         card.append(head, meta);
         const progress = progressFor(job);
+        const stability = job.progress?.stability;
+        if (stability?.upgraded) progress.text += ' · 已升级完整检查：' + (stability.reasons?.[0]?.message || '生成期间触发过内存暂停');
+        else if (['busy', 'moderate', 'memory-caution'].includes(job.progress?.pressure)) progress.text += ' · 当前负载偏高，已保护性降速';
         const pauseReason = job.state === 'paused' ? (job.pause?.reason || '系统内存安全预算不足，当前任务已暂停；清理内存后点击“继续任务”。') : '';
         if (progress.text || job.error || pauseReason) {
             const detail = document.createElement('p');

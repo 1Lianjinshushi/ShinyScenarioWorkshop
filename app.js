@@ -330,6 +330,7 @@ function refreshUnknownSpeakers() {
 
 function renderSpeakerEditor() {
     refreshUnknownSpeakers();
+    window.SSVWorkspace?.updateSpeakers(state.unknownSpeakers.length);
     ui['speaker-editor'].replaceChildren();
     if (!state.tracks) {
         ui['speaker-empty'].hidden = false;
@@ -1538,6 +1539,7 @@ function updateActionAvailability() {
     // exists yet, playEditScenario creates and archives a blank working copy.
     ui['play-edit'].disabled = !loaded;
     window.SSVOfflineExport?.refreshAvailability();
+    window.SSVWorkspace?.updateStory(state);
 }
 
 ui['fetch-scenario'].addEventListener('click', fetchScenario);

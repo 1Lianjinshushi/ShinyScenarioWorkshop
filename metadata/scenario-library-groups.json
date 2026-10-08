@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-10-07T06:26:31+00:00",
+  "generatedAt": "2026-10-08T08:55:53+00:00",
   "cards": {
     "3004027": {
       "cardName": "【食堂のリトルアイドル】",
@@ -11324,6 +11324,36 @@
       "cardId": "2040020270",
       "label": "灯织S卡・【Master ShowPiece】",
       "source": "shinycolors.moe/card-event-id"
+    },
+    "3020022": {
+      "cardName": "【アメと風と】",
+      "rawCardName": "【アメと風と】浅倉透",
+      "characterId": "020",
+      "characterName": "透",
+      "cardType": "Support",
+      "cardId": "2040200170",
+      "label": "透S卡・【アメと風と】",
+      "source": "scenario-event-metadata"
+    },
+    "3028013": {
+      "cardName": "【探偵は二面相】",
+      "rawCardName": "【探偵は二面相】郁田はるき",
+      "characterId": "028",
+      "characterName": "阳希",
+      "cardType": "Support",
+      "cardId": "2040280090",
+      "label": "阳希S卡・【探偵は二面相】",
+      "source": "scenario-event-metadata"
+    },
+    "3013029": {
+      "cardName": "【誰か越しのあなた】",
+      "rawCardName": "【誰か越しのあなた】有栖川夏葉",
+      "characterId": "013",
+      "characterName": "夏叶",
+      "cardType": "Support",
+      "cardId": "2030130130",
+      "label": "夏叶S卡・【誰か越しのあなた】",
+      "source": "scenario-event-metadata"
     }
   },
   "activities": {

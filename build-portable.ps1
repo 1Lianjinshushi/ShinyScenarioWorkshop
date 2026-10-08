@@ -1,5 +1,5 @@
 param(
-    [string]$Version = '20261007-r16',
+    [string]$Version = '20261009-r17',
     [string]$OutputDirectory = (Join-Path (Split-Path -Parent $PSScriptRoot) 'release'),
     [string]$NodeExecutable = 'C:\Users\Lenovo\AppData\Local\Programs\nodejs-v24.20.0\node.exe',
     [string]$NodeLicense = 'C:\Users\Lenovo\AppData\Local\Programs\nodejs-v24.20.0\LICENSE',
@@ -114,7 +114,7 @@ function Write-PackageText([string]$RelativePath, [string]$Text) {
 
 $files = @(
     '.gitignore',
-    'app-related.css', 'app.css', 'app.html', 'app.js', 'offline-progress.html',
+    'app-related.css', 'app.css', 'app-workspace.css', 'app.html', 'app.js', 'offline-progress.html',
     'CHANGELOG.md',
     'config.example.json',
     'DISTRIBUTION-NOTICE.md',
@@ -139,7 +139,7 @@ Copy-RequiredDirectory 'scripts'
 # are intentionally excluded.
 $offlineRuntimeFiles = @(
     'audio-master.js', 'audio-merge.cjs', 'bridge.cjs', 'cleanup.cjs',
-    'clock.js', 'flow.js', 'governor.cjs', 'language.cjs', 'movies.js',
+    'clock.js', 'flow.js', 'governor.cjs', 'lease.cjs', 'memory-sampler.cjs', 'language.cjs', 'movies.js', 'decoded-cache.cjs', 'frame-pipeline.js', 'verify.cjs',
     'naming.cjs', 'page.js', 'preflight.cjs', 'profile.cjs', 'queue.cjs',
     'run.cjs', 'service.cjs'
 )

@@ -7,13 +7,28 @@ const test = require('node:test');
 const root = path.join(__dirname, '..');
 const html = fs.readFileSync(path.join(root, 'app.html'), 'utf8');
 const css = fs.readFileSync(path.join(root, 'app.css'), 'utf8');
+const workspaceCss = fs.readFileSync(path.join(root, 'app-workspace.css'), 'utf8');
+const navigation = fs.readFileSync(path.join(root, 'scripts/WorkspaceNavigation.js'), 'utf8');
 const monitorApp = fs.readFileSync(path.join(root, 'scripts', 'GameUpdateMonitorApp.js'), 'utf8');
 
-test('workshop visual hierarchy keeps the three existing work areas', () => {
+test('workshop has four independent workspace views and shared stable controls', () => {
     assert.match(html, /class="panel fetch-panel"/);
-    assert.match(html, /class="section-heading subsection-main-heading"/);
-    assert.match(html, /class="offline-export-panel"/);
+    for (const view of ['library', 'workbench', 'export', 'maintenance']) {
+        assert.equal((html.match(new RegExp('data-workspace-view="' + view + '"', 'g')) || []).length, 1);
+        assert.match(html, new RegExp('data-go-workspace="' + view + '"'));
+    }
+    const ids = [...html.matchAll(/\bid="([^"]+)"/g)].map(match => match[1]);
+    assert.equal(new Set(ids).size, ids.length, 'no duplicated controls or file inputs');
+    assert.match(html, /class="offline-export-panel panel"/);
     assert.match(html, /id="game-update-monitor"/);
+    assert.ok(html.indexOf('id="translation-batch"') < html.indexOf('id="speaker-details"'));
+    assert.ok(html.indexOf('id="offline-export-active-jobs"') < html.indexOf('id="offline-export-jobs"'));
+    assert.match(html, /data-workspace-click="translation-batch"/);
+    assert.match(html, /data-library-tab="updates"/);
+    assert.match(html, /data-library-tab="all"/);
+    assert.match(html, /scripts\/WorkspaceNavigation\.js/);
+    assert.match(workspaceCss, /\.workspace-shell \[hidden\] \{ display: none !important;/);
+    assert.doesNotMatch(navigation, /innerHTML|replaceChildren|setInterval/);
     assert.match(css, /\.panel::before\s*\{/);
     assert.match(css, /\.fetch-grid\s*\{[^}]*border:/s);
     assert.match(css, /\.offline-export-panel\[open\]/);
@@ -21,6 +36,15 @@ test('workshop visual hierarchy keeps the three existing work areas', () => {
     assert.match(monitorApp, /function cardResourceMarkup\(node\)/);
     assert.match(monitorApp, /载入本地 MP4/);
     assert.match(css, /\.monitor-card-resources\s*\{/);
+});
+
+test('workspace CSS and navigation are included in portable builds', () => {
+    const builder = fs.readFileSync(path.join(root, 'build-portable.ps1'), 'utf8');
+    assert.match(builder, /'app-workspace\.css'/);
+    assert.match(builder, /Copy-RequiredDirectory 'scripts'/);
+    assert.match(navigation, /data-help-fallback/);
+    assert.match(navigation, /ssv\.workspace\.view\.v1/);
+    assert.match(workspaceCss, /@media \(max-width: 800px\)/);
 });
 
 test('workshop controls retain focus, reduced-motion, and narrow-screen treatments', () => {

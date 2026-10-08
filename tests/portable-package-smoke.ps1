@@ -29,6 +29,13 @@ try {
     }
     if(-not $ready) { throw 'Packaged server did not start' }
     if($response.Content -notmatch 'ShinyScenarioUpdateMonitor.user.js') { throw 'Install entry missing' }
+    foreach($view in @('library','workbench','export','maintenance')) {
+        if($response.Content -notmatch ('data-workspace-view="'+$view+'"')) { throw "Workspace view missing: $view" }
+    }
+    foreach($file in @('app-workspace.css','scripts/WorkspaceNavigation.js')) {
+        $ui=Invoke-WebRequest "$base/$file" -UseBasicParsing -TimeoutSec 10
+        if($ui.StatusCode -ne 200 -or $ui.RawContentLength -le 0) { throw "Missing layout file: $file" }
+    }
     $script=Invoke-WebRequest "$base/scripts/ShinyScenarioUpdateMonitor.user.js" -UseBasicParsing
     if($script.Headers['Content-Type'] -ne 'application/javascript; charset=utf-8') { throw 'Userscript MIME/encoding incorrect' }
     if($script.Content -notmatch '@version\s+0.9.2') { throw 'Old userscript bundled' }
@@ -43,6 +50,8 @@ try {
     $node=Join-Path $package 'tools/node.exe'
     & $node --check (Join-Path $package 'experiments/offline-export/run.cjs')
     if($LASTEXITCODE) { throw 'Packaged Node runtime failed' }
+    & $node -e "for(const name of ['queue','governor','profile','lease','memory-sampler','decoded-cache','verify']) require(process.argv[1]+'/'+name+'.cjs'); console.log('Export dependency graph OK')" (Join-Path $package 'experiments/offline-export')
+    if($LASTEXITCODE) { throw 'Packaged export dependencies failed' }
     & $node -e "const p=require(process.argv[1]); if(!p.chromium) process.exit(1); console.log('Playwright import OK')" (Join-Path $package 'tools/node_modules/playwright')
     if($LASTEXITCODE) { throw 'Packaged Playwright runtime failed' }
     Write-Output "PASS: extracted ZIP, clean state, $($actual.Count) manifest files, $($runtime.files.Count) runtime assets, UTF-8 userscript, API routes and bundled Node/Playwright"

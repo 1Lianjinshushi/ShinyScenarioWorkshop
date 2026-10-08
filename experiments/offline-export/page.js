@@ -41,19 +41,36 @@ proof.describe = (raw, options = {}) => {
     proof.ending = null;
     return manifest();
 };
-// Use exactly PIXI's decoder (AAC priming/padding differs from FFmpeg's decoder).
-// One source buffer at a time; transfer one second of PCM per request.
+// Keep Chromium's Web Audio decoder (AAC priming/padding differs from FFmpeg),
+// but do not inherit PIXI's device-dependent context rate. decodeAudioData
+// resamples directly to this offline context's 48 kHz, without playing audio
+// or holding a second, device-rate decoded buffer. The PCM mixer is 48 kHz.
+proof.audioFormat = Object.freeze({ decoder: 'webaudio-48k-v1', sampleRate: 48000, channels: 2 });
+proof.initAudioDecoder = () => {
+    if (!proof.audioDecodeContext) {
+        proof.audioDecodeContext = new OfflineAudioContext(1, 2, proof.audioFormat.sampleRate);
+    }
+    if (proof.audioDecodeContext.sampleRate !== proof.audioFormat.sampleRate)
+        throw new Error(`音频解码器初始化失败：需要 48000 Hz，实际 ${proof.audioDecodeContext.sampleRate} Hz`);
+    return { ...proof.audioFormat, playbackSampleRate: PIXI.sound?.context?.audioContext?.sampleRate ?? null };
+};
+// One source buffer at a time; transfer one second of stereo PCM per request.
 proof.decodeAudio = async url => {
-    const bytes = await (await fetch(url)).arrayBuffer();
-    proof.decodedAudio = await new Promise((resolve, reject) =>
-        PIXI.sound.context.decode(bytes, (error, buffer) => error ? reject(error) : resolve(buffer)));
-    const b = proof.decodedAudio;
-    if (b.sampleRate !== 48000) throw new Error('This proof expects a 48 kHz decoder');
-    return { samples: b.length, duration: b.duration, channels: b.numberOfChannels };
+    proof.decodedAudio = null;
+    proof.initAudioDecoder();
+    const response = await fetch(url);
+    if (!response.ok) throw new Error(`音频读取失败：HTTP ${response.status}`);
+    const b = await proof.audioDecodeContext.decodeAudioData(await response.arrayBuffer());
+    if (b.sampleRate !== proof.audioFormat.sampleRate || !Number.isSafeInteger(b.length) || b.length <= 0
+        || !Number.isFinite(b.duration) || b.duration <= 0 || !Number.isInteger(b.numberOfChannels) || b.numberOfChannels < 1)
+        throw new Error(`音频解码结果无效：${b.sampleRate} Hz，${b.length} 帧，${b.numberOfChannels} 声道`);
+    proof.decodedAudio = b;
+    return { samples: b.length, duration: b.duration, channels: b.numberOfChannels, sampleRate: b.sampleRate };
 };
 proof.audioChunk = start => {
     const b = proof.decodedAudio;
-    const frames = Math.min(48000, b.length - start);
+    if (!b || !Number.isSafeInteger(start) || start < 0 || start >= b.length) throw new Error('Invalid PCM offset');
+    const frames = Math.min(proof.audioFormat.sampleRate, b.length - start);
     const interleaved = new Float32Array(frames * 2);
     const left = b.getChannelData(0), right = b.getChannelData(Math.min(1, b.numberOfChannels - 1));
     for (let i = 0; i < frames; i++) { interleaved[i * 2] = left[start + i]; interleaved[i * 2 + 1] = right[start + i]; }

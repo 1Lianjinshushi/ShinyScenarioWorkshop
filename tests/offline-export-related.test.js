@@ -107,6 +107,8 @@ test('batch import fetches translated snapshots, checks returned jobs, and never
     let jobs = [];
     const data = () => ({
         manualStart: true, available: true, missing: [], jobs,
+        concurrencyModes: [1, 2], defaultConcurrency: 2,
+        verificationModes: ['auto', 'quick', 'full'], defaultVerificationMode: 'auto',
         policyDefaults: { memoryMiB: 3072, reserveMiB: 1609 },
         policyBounds: { memoryMiB: { min: 512, max: 8192 }, reserveMiB: { min: 1024, max: 8192 } },
     });

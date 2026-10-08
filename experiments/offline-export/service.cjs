@@ -19,7 +19,7 @@ const server = http.createServer(async (req, res) => {
         let result;
         if (req.method === 'GET' && req.url === '/jobs') result = queue.list();
         else if (req.method === 'POST' && req.url === '/jobs') result = queue.submit(payload.items);
-        else if (req.method === 'POST' && req.url === '/start') result = queue.start(payload.ids, payload.settings);
+        else if (req.method === 'POST' && req.url === '/start') result = queue.start(payload.ids, payload.settings, payload.speedMode, payload.concurrency, payload.verificationMode);
         else if (req.method === 'POST' && req.url === '/settings') result = await queue.updateSettings(payload.ids, payload.settings);
         else if (req.method === 'POST' && req.url === '/resume') result = await queue.resume(payload.id);
         else if (req.method === 'POST' && req.url === '/open-root') result = queue.openRoot();

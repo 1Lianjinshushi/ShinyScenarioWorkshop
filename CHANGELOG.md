@@ -1,5 +1,30 @@
 # Changelog
 
+## 20261009-r17 — 2026-10-09
+
+- 发布完整便携包，同步重写快速说明书的操作页并更新独立直出教程。保留历史维护日志；内置通用资源、字体、Node.js 与 Playwright，FFmpeg／FFprobe 仍由使用者配置。
+
+- 工坊整理为“剧情资源库 / 翻译工作台 / 后台直出 / 维护与帮助”四个入口，资源库分为更新日志与完整目录。页面切换保留剧情、CSV、目录展开与直出任务节点；默认进入翻译工作台，记住上次入口。批量 CSV 复用同一导入通道，不自动开始直出；运行 / 暂停任务置顶，完成记录仍不堆积。低频内存设置、规则与资源修复折叠显示，缺失发言人自动展开，统一同级标题和间距。仅调整操作界面，不修改渲染、混音、资源拦截及分类规则。
+- 后台直出默认使用自动成片检查：正常时快速核对轨道规格、帧数、逐帧时间戳、视频包文件范围和音视频时长；仅生成／合成／封装期间触发内存暂停时，本篇升级为完整解码。复用现有采样与暂停回调，不新增轮询或逐帧扫描；CPU 高负载、共享通道等待、预检暂停不会升级。保留仅快速／始终完整选项，完整解码低负载 2 线程、高速最多 4 个。升级原因在进度中显示并写入报告，不改写成片；均不能替代人工演出／音画同步验收。
+- 修复一篇在 FFmpeg 封装／检查时长期占用共享大块分配锁、使另一篇“处理音频”实际一直等待的问题。FFmpeg 仍独立参与内存预算、暂停／继续及取消控制；大块音频分配和缓存互斥保留。工坊和进度页明确显示共享通道等待原因与时间，并记录阶段耗时／等待统计。
+- 本地后台直出加入单线／双线选择，最多两篇同时生成，单篇仍由一个 worker 完整处理。任务进度、暂停／继续、取消和内存设置确认独立；暂停时保留队列顺序。增加父批次／子槽位锁、共享缓存互斥与大块分配错峰，避免并行写入和内存预算竞争；不改变 1080p60、剧情时序及混音规格，不自动弹出进度小窗。
+- 高速直出增加有界两帧编码流水线和最多 8 帧的浏览器批处理；100 ms 正常工作预算后交还安全检查，遇到系统压力退回逐帧处理。逐帧验证编码确认和时间戳，不丢帧、不改演出速度；低负载模式保持原路径。
+- 增加跨任务共享的已解码音频／动态视频帧磁盘缓存（最多 2 GiB，按最近使用回收）。仅在源资源校验通过后按完整 SHA-256 与解码器版本匹配，校验所有派生文件，失效时重新解码；资源缺失仍拦截，任务使用独立副本，取消不会删除共享素材。
+- 后台直出新增可选“高速模式”：正常负载下取消生成帧率上限与固定等待（包括零毫秒定时器），每帧仍等待编码确认；保持成片 1080p60、全部帧与演出时序，CPU/内存/磁盘保护规则不变。默认保留低负载模式，速度按开始时的批次选择保存；兼容已运行队列服务的旧 60 FPS 参数，不要求重启服务。
+- Windows 内存检查改为复用单个隐藏采样进程，保持原有 3 秒检查频率，计入采样进程自身内存；不再每次检查重复启动 PowerShell。退出、取消和采样异常均清理专属采样进程。
+- 开始直出不再自动弹出进度小窗、关闭工坊或跳转精简占位页；直接在工坊任务列表显示进度，由用户按需手动最小化。
+
+- Decode background-export audio in a dedicated 48 kHz Web Audio context,
+  independent of the playback device's sample rate. Keep Chromium's AAC
+  decoding behavior and the existing stereo PCM/mixing timeline; no system
+  sound setting or ordinary playback context is changed.
+- Validate decoded rate/duration and version PCM cache metadata so untagged or
+  incompatible cached PCM is regenerated, not reinterpreted at the wrong speed.
+  Report shared decoder initialization failures once rather than once per file.
+- Add unit tests plus a real-browser rate/pitch/timing regression: 44.1/48/96 kHz
+  playback contexts, mono/stereo sources from 8 to 96 kHz, and the 67 audio files
+  from the reported 302002201 failure.
+
 ## 20261007-r16 — 2026-10-07
 
 - Harden the game-update listener as userscript 0.9.2. It no longer calls the

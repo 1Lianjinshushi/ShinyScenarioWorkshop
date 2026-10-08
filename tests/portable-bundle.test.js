@@ -20,8 +20,8 @@ test('portable metadata adapter and clean cache flags ship with the server', () 
     assert.match(builder, /@\('PACKAGE-CONTENTS.txt'\)/);
 });
 
-test('r16 portable builder cannot silently replace r12 or an existing package', () => {
-    assert.match(builder, /\$Version = '20261007-r16'/);
+test('r17 portable builder cannot silently replace r12 or an existing package', () => {
+    assert.match(builder, /\$Version = '20261009-r17'/);
     assert.match(builder, /\$Version -eq '20260907-r12'/);
     assert.match(builder, /Package target already exists/);
     assert.doesNotMatch(builder, /Remove-Item -LiteralPath \$PackageRoot/);
@@ -47,14 +47,15 @@ test('offline experiment inclusion is a fixed production dependency list', () =>
     const files = [...match[1].matchAll(/'([^']+)'/g)].map(item => item[1]);
     assert.deepEqual(files.sort(), [
         'audio-master.js', 'audio-merge.cjs', 'bridge.cjs', 'cleanup.cjs',
-        'clock.js', 'flow.js', 'governor.cjs', 'language.cjs', 'movies.js',
+        'clock.js', 'flow.js', 'governor.cjs', 'lease.cjs', 'memory-sampler.cjs', 'language.cjs', 'movies.js', 'decoded-cache.cjs', 'frame-pipeline.js', 'verify.cjs',
         'naming.cjs', 'page.js', 'preflight.cjs', 'profile.cjs', 'queue.cjs',
         'run.cjs', 'service.cjs',
     ].sort());
     for (const file of files) assert.ok(fs.statSync(path.join(root, 'experiments/offline-export', file)).isFile());
     assert.doesNotMatch(builder, /Copy-RequiredDirectory 'experiments\/offline-export'/);
     assert.ok(!files.includes('README.md'));
-    assert.ok(!files.some(file => /^(?:audit|diagnose|verify)/.test(file)));
+    // verify.cjs is the production output inspector, not a developer benchmark.
+    assert.ok(!files.some(file => file !== 'verify.cjs' && /^(?:audit|diagnose|verify)/.test(file)));
 });
 
 test('runtime manifest carries workshop font and both 016 dialogue frames', () => {

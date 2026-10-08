@@ -18,9 +18,11 @@ test('progress page is a lightweight standalone view, not the player', () => {
     assert.match(html, /button \{ font: inherit; font-size: 14px;/);
     assert.match(source, /\.\/api\/offline-export\//);
     const workshop = fs.readFileSync(path.join(root, 'scripts/AppOfflineExport.js'), 'utf8');
-    assert.match(workshop, /window\.open\(progressUrl/);
+    assert.doesNotMatch(workshop, /window\.open\(/);
     assert.match(workshop, /await action\('start'/);
-    assert.match(workshop, /offline-progress\.html\?parked=1/);
+    assert.doesNotMatch(workshop, /window\.close\(|window\.location\.replace\(|progressWindow\.focus\(/);
+    assert.match(workshop, /手动最小化/);
+    assert.match(workshop, /进度显示在下方任务列表/);
 });
 
 test('parked placeholder never polls the queue or loads the player', () => {

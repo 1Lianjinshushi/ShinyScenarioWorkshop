@@ -19,6 +19,124 @@ function fixture(t) {
         fs.rmSync(resolved, { recursive: true }); });
     return { root, queue, children, options };
 }
+
+test('verification choice is atomic, persisted per job and passed to each worker', t => {
+    const { root, queue:q, children, options }=fixture(t);
+    assert.deepEqual(q.list().verificationModes,['auto','quick','full']);assert.equal(q.list().defaultVerificationMode,'auto');
+    const { ids }=q.submit([item(),item('4902005027'),item('4902005028')]);
+    for(const mode of ['none','',null,{},1]) {
+        assert.throws(()=>q.start(ids,undefined,'high-speed',2,mode),/检查模式/);
+        assert(q.jobs.every(j=>j.state==='pending'));assert.equal(children.length,0);
+    }
+    q.start(ids.slice(0,2),undefined,'high-speed',2,'full');q.start(ids.slice(2));
+    assert(children.every(c=>c.settings.env.SSV_PROOF_VERIFICATION==='full'));
+    assert.equal(new ExportQueue(root,options).get(ids[0]).verificationMode,'full');
+    children[0].emit('close',1);children[1].emit('close',1);
+    assert.equal(children[2].settings.env.SSV_PROOF_VERIFICATION,'auto');children[2].emit('close',1);
+});
+test('speed choice is validated atomically, persisted and isolated per batch', async t => {
+    const { root, queue: q, children, options } = fixture(t);
+    assert.deepEqual(q.list().speedModes, ['low-load', 'high-speed']);
+    assert.equal(q.list().defaultSpeedMode, 'low-load');
+    const { ids } = q.submit([item(), item('4902005027'), item('4902005028')]);
+    for (const bad of ['turbo', 60, null, {}, '']) {
+        assert.throws(() => q.start(ids, undefined, bad), /速度模式/);
+        assert(q.jobs.every(j => j.state === 'pending')); assert.equal(children.length, 0);
+    }
+    q.start(ids.slice(0, 2), undefined, 'high-speed');
+    q.start(ids.slice(2));
+    assert.equal(children.length, 1, 'high speed does not enable parallel jobs');
+    assert.equal(children[0].settings.env.SSV_PROOF_SPEED_MODE, 'high-speed');
+    assert.equal(children[0].settings.env.SSV_PROOF_WALL_FPS, '60');
+    assert.equal(limits(children[0].settings.env).fps, null,
+        'legacy queue cap must not throttle a new high-speed worker');
+    await q.updateSettings([ids[1]], { memoryMiB: 4096, reserveMiB: 2048 });
+    assert.equal(q.get(ids[1]).speedMode, 'high-speed', 'memory edit must not reset speed');
+    const restored = new ExportQueue(root, options);
+    assert.equal(restored.get(ids[1]).speedMode, 'high-speed');
+    children[0].emit('close', 1);
+    assert.equal(children[1].settings.env.SSV_PROOF_SPEED_MODE, 'high-speed');
+    children[1].emit('close', 1);
+    assert.equal(children[2].settings.env.SSV_PROOF_SPEED_MODE, 'low-load');
+    assert.equal(children[2].settings.env.SSV_PROOF_WALL_FPS, '18');
+    children[2].emit('close', 1);
+});
+test('dual queue caps at two, preserves FIFO and reserves distinct worker slots', t => {
+    const { queue: q, children, root } = fixture(t);
+    assert.deepEqual(q.list().concurrencyModes, [1, 2]);
+    assert.equal(q.list().defaultConcurrency, 2);
+    const { ids } = q.submit([item(), item('4902005027'), item('4902005028')]);
+    for (const bad of [0, 3, '2', null, {}]) assert.throws(() => q.start(ids, undefined, 'high-speed', bad), /只能为/);
+    assert(q.jobs.every(j => j.state === 'pending'));
+    q.start(ids, undefined, 'high-speed', 2);
+    assert.equal(children.length, 2); assert.equal(q.list().activeWorkers, 2);
+    assert.equal(q.get(ids[2]).state, 'queued');
+    assert.deepEqual(children.map(c => c.settings.env.SSV_PROOF_SLOT), ['1', '2']);
+    assert.equal(children[0].settings.env.SSV_PROOF_QUEUE_TOKEN, children[1].settings.env.SSV_PROOF_QUEUE_TOKEN);
+    children[1].emit('close', 1);
+    assert.equal(children.length, 3); assert.equal(q.get(ids[2]).state, 'running');
+    assert.equal(children[2].settings.env.SSV_PROOF_SLOT, '2');
+    children[0].emit('close', 1); children[2].emit('close', 1);
+    assert.equal(q.active, null); assert(!fs.existsSync(path.join(root, 'exports/.offline-export.lock')));
+});
+
+test('one selected story starts only one worker even in dual mode; serial batch is a FIFO barrier', t => {
+    const { queue: q, children } = fixture(t);
+    const { ids } = q.submit([item(), item('4902005027'), item('4902005028')]);
+    q.start([ids[0]], undefined, 'high-speed', 2); assert.equal(children.length, 1);
+    q.start([ids[1]]); q.start([ids[2]], undefined, 'high-speed', 2);
+    assert.equal(children.length, 1);
+    children[0].emit('close', 1); assert.equal(children.length, 2); assert.equal(q.active.job.id, ids[1]);
+    children[1].emit('close', 1); assert.equal(children.length, 3);
+    children[2].emit('close', 1);
+});
+
+test('dual pause keeps the slot and blocks new jobs, resume and cancellation target only the named worker', async t => {
+    const { queue: q, children } = fixture(t);
+    const { ids } = q.submit([item(), item('4902005027'), item('4902005028')]);
+    q.start(ids, undefined, 'high-speed', 2);
+    children[1].emit('message', { type: 'memory-pause', phase: 'render', message: 'test budget' });
+    children[0].emit('close', 1);
+    assert.equal(children.length, 2); assert.equal(q.get(ids[2]).state, 'queued');
+    const resume = q.resume(ids[1]), request = children[1].sent.at(-1);
+    assert.equal(request.type, 'memory-resume'); assert.equal(children[0].sent.length, 0);
+    children[1].emit('message', { type: 'memory-resume-result', requestId: request.requestId, resumed: true });
+    assert.equal((await resume).resumed, true); assert.equal(children.length, 3);
+    q.cancel(ids[1]); assert.equal(children[1].sent.at(-1).type, 'cancel');
+    assert.equal(children[2].sent.length, 0); assert.equal(q.get(ids[2]).state, 'running');
+    children[1].emit('close', 1); children[2].emit('close', 1);
+});
+
+test('dual settings await both workers and retain only acknowledged changes on rejection', async t => {
+    const { queue: q, children } = fixture(t);
+    const { ids } = q.submit([item(), item('4902005027'), item('4902005028')]);
+    q.start(ids, undefined, 'high-speed', 2);
+    const updated = { memoryMiB: 4096, reserveMiB: 2048 };
+    const request = q.updateSettings(ids, updated);
+    const rejected = assert.rejects(request, /部分运行任务/);
+    const [a, b] = children.map(c => c.sent.at(-1));
+    children[0].emit('message', { type: 'memory-settings-ack', token: a.token, settings: a.settings });
+    children[1].emit('message', { type: 'memory-settings-rejected', token: b.token, error: 'test' });
+    await rejected;
+    assert.deepEqual(q.get(ids[0]).settings, updated);
+    assert.notDeepEqual(q.get(ids[1]).settings, updated); assert.notDeepEqual(q.get(ids[2]).settings, updated);
+    const request2 = q.updateSettings(ids, updated);
+    for (const child of children) { const m = child.sent.at(-1); child.emit('message', { type: 'memory-settings-ack', token: m.token, settings: m.settings }); }
+    assert.equal((await request2).updatedIds.length, 3);
+    children[0].emit('close', 1); children[1].emit('close', 1); children[2].emit('close', 1);
+});
+
+test('dual service restart marks both workers interrupted and restores queued jobs only as pending', t => {
+    const { queue: q, children, root, options } = fixture(t);
+    const { ids } = q.submit([item(), item('4902005027'), item('4902005028')]);
+    q.start(ids, undefined, 'high-speed', 2);
+    children[1].emit('message', { type: 'memory-pause', phase: 'ffmpeg' });
+    const restored = new ExportQueue(root, options);
+    assert.deepEqual(ids.map(id => restored.get(id).state), ['interrupted', 'interrupted', 'pending']);
+    assert.equal(restored.workers.size, 0);
+    q.cancel(ids[2]); children[0].emit('close', 1); children[1].emit('close', 1);
+});
+
 test('requests accept immutable JSON snapshots, reject malformed IDs/modes/branch counts', () => {
     assert.equal(validateRequest(item()).eventId, '4902005026');
     assert.equal(validateRequest({ ...item(), content: JSON.stringify([{ select: 'only', nextLabel: 'end' }]) }).eventId,
@@ -291,7 +409,9 @@ test('preroll batches preserve sequential steps and hand off first capture frame
     await assert.rejects(proof.advancePreroll(0, 7));
     const runner = fs.readFileSync(path.join(__dirname, '../experiments/offline-export/run.cjs'), 'utf8');
     assert.match(runner, /options.branchPreview && !runProfile.diagnostics/);
-    assert.match(runner, /prepared \|\| await proof.step/);
+    assert.match(runner, /proof.renderBatch\(args\)/);
+    const pipeline = fs.readFileSync(path.join(__dirname, '../experiments/offline-export/frame-pipeline.js'), 'utf8');
+    assert.match(pipeline, /prepared \|\| await proof.step/);
 });
 test('preroll throughput remains bounded and yields more under foreground pressure', () => {
     const normal = prerollRest(10, 6, { reason: 'normal', duty: 0.65 });

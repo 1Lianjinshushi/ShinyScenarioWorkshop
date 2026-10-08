@@ -30,8 +30,11 @@
     }
 
     function syncCollapseAllButton() {
-        collapseAllButton.hidden = !monitorVisible || !list.querySelector('details[open]');
+        collapseAllButton.hidden = !monitorVisible || Boolean(list.closest('[hidden]'))
+            || !Array.from(list.querySelectorAll('details[open]')).some(node => !node.closest('[hidden]'));
     }
+    window.addEventListener('ssv-workspace-view-changed', syncCollapseAllButton);
+    window.addEventListener('ssv-workspace-library-changed', syncCollapseAllButton);
 
     if (typeof IntersectionObserver === 'function') {
         new IntersectionObserver(entries => {
@@ -41,12 +44,12 @@
     }
 
     collapseAllButton.addEventListener('click', () => {
-        const anchor = lastExpandedRoot && lastExpandedRoot.isConnected
+        const anchor = lastExpandedRoot && lastExpandedRoot.isConnected && !lastExpandedRoot.closest('[hidden]')
             ? lastExpandedRoot
-            : list.querySelector('.monitor-update-log[open], .monitor-tree-node[data-depth="0"][open]');
+            : Array.from(list.querySelectorAll('.monitor-tree-node[data-depth="0"][open]')).find(node => !node.closest('[hidden]'));
         const summary = anchor && anchor.querySelector(':scope > summary');
         Array.from(list.querySelectorAll('details[open]')).reverse().forEach(details => {
-            details.open = false;
+            if (!details.closest('[hidden]')) details.open = false;
         });
         lastExpandedRoot = null;
         collapseAllButton.hidden = true;
@@ -139,6 +142,9 @@
                     type.value = row.dataset.eventType;
                 }
                 if (id) id.value = row.dataset.eventId;
+                window.SSVWorkspace?.show('workbench', { focus: true });
+                const fetchById = document.getElementById('fetch-by-id');
+                if (fetchById) fetchById.open = true;
                 document.querySelector('.fetch-panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
             });
         });
@@ -415,7 +421,6 @@
         const openTreeKeys = new Set(Array.from(
             list.querySelectorAll('.monitor-tree-node[open]'), item => item.dataset.treeKey
         ));
-        const updateLogWasOpen = Boolean(list.querySelector('.monitor-update-log[open]'));
         const hierarchy = core.buildScenarioHierarchy(rows);
         const updateLog = core.buildUpdateLog(rows);
         const nodeMap = new Map();
@@ -424,18 +429,11 @@
         const updateLogBody = updateLog.length
             ? updateLog.map(node => treeMarkup(node, 0, openTreeKeys)).join('')
             : '<div class="monitor-lazy-note">升级后的新发现会按日期保存在这里；旧基线不会被误报为更新。</div>';
-        list.innerHTML = `<details class="monitor-update-log${unread ? ' unread' : ''}"${updateLogWasOpen || unread ? ' open' : ''}>
-            <summary class="monitor-update-log-summary">
-                <span class="monitor-update-log-dot" aria-hidden="true"></span>
-                <div class="monitor-copy">
-                    <strong>更新日志</strong>
-                    <span>按发现日期整理新增剧情；标记已读后历史记录仍会保留。</span>
-                </div>
-                <span class="monitor-group-count">${unread ? `${unread} 条未读` : `${updateLog.length} 个日期`}</span>
-            </summary>
+        list.innerHTML = `<section id="library-pane-updates" class="monitor-update-log${unread ? ' unread' : ''}" role="tabpanel" aria-labelledby="library-tab-updates">
+            <p class="workspace-hint">${unread ? `${unread} 条未读` : `${updateLog.length} 个日期`} · 按发现日期整理；标记已读后历史记录仍会保留。</p>
             <div class="monitor-update-log-days">${updateLogBody}</div>
-        </details>
-        <section class="monitor-library">
+        </section>
+        <section id="library-pane-all" class="monitor-library" role="tabpanel" aria-labelledby="library-tab-all">
             <div class="monitor-library-heading">
                 <div><strong>完整资源库</strong><span>按活动、育成、特殊剧情以及组合／角色／卡片分层浏览</span></div>
                 <span>${total} 条剧情</span>
@@ -446,14 +444,7 @@
         const libraryTree = list.querySelector('.monitor-library-tree');
         if (logDays) bindTreeNodes(logDays, nodeMap, openTreeKeys);
         if (libraryTree) bindTreeNodes(libraryTree, nodeMap, openTreeKeys);
-        const updateLogDetails = list.querySelector('.monitor-update-log');
-        if (updateLogDetails) {
-            updateLogDetails.addEventListener('toggle', () => {
-                if (updateLogDetails.open) lastExpandedRoot = updateLogDetails;
-                requestAnimationFrame(syncCollapseAllButton);
-            });
-            if (updateLogDetails.open) lastExpandedRoot = updateLogDetails;
-        }
+        window.SSVWorkspace?.applyLibraryTab();
         syncCollapseAllButton();
     }
 

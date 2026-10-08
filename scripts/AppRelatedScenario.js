@@ -102,6 +102,8 @@
 
         button.disabled = true;
         panel.hidden = false;
+        const resultsDetails = document.getElementById('related-details');
+        if (resultsDetails) resultsDetails.open = true;
         list.replaceChildren();
         badge.textContent = '正在检索…';
         badge.className = 'badge warn';

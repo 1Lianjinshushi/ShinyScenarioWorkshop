@@ -1,39 +1,51 @@
 'use strict';
 const fs = require('node:fs');
 const os = require('node:os');
-const cp = require('node:child_process');
-const { promisify } = require('node:util');
-const execFile = promisify(cp.execFile);
+const { ProcessMemorySampler } = require('./memory-sampler.cjs');
 const MiB = 1024 * 1024;
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+const SPEED_MODES = Object.freeze(['low-load', 'high-speed']);
+function validateSpeedMode(value = 'low-load') {
+    if (!SPEED_MODES.includes(value)) throw new Error('导出速度模式无效');
+    return value;
+}
 
 function limits(env = process.env, total = os.totalmem()) {
+    const speedMode = validateSpeedMode(env.SSV_PROOF_SPEED_MODE);
     const number = (key, fallback, min, max) => {
         const n = Number(env[key] ?? fallback);
         if (!Number.isFinite(n) || n < min || n > max) throw new Error(`${key} must be ${min}..${max}`);
         return n;
     };
     return {
-        fps: number('SSV_PROOF_WALL_FPS', 18, 1, 30),
+        speedMode,
+        // null explicitly means no wall-clock FPS cap. Ignore legacy queue
+        // WALL_FPS overrides in high-speed mode, including a still-running
+        // service's previous value of 60. This never changes video timestamps.
+        fps: speedMode === 'high-speed' ? null : number('SSV_PROOF_WALL_FPS', 18, 1, 30),
         memoryMiB: number('SSV_PROOF_MEMORY_MIB', Math.min(3072, Math.floor(total / MiB / 4)), 512, 8192),
         reserveMiB: number('SSV_PROOF_RESERVE_MIB', Math.max(1536, Math.floor(total / MiB * 0.1)), 512, total / MiB),
         sampleMs: 3000,
     };
 }
 function decide(sample, policy) {
+    const cappedFps = maximum => Math.min(policy.fps ?? Infinity, maximum);
     if (sample.diskFreeMiB != null && sample.diskFreeMiB < 512) return { action: 'abort', reason: 'disk-space' };
-        if (sample.privateMiB >= policy.memoryMiB) return { action: 'pause', reason: 'export-memory-budget' };
+    if (sample.privateMiB >= policy.memoryMiB) return { action: 'pause', reason: 'export-memory-budget' };
     if (sample.freeMiB < policy.reserveMiB) return { action: 'pause', reason: 'system-memory-pressure' };
     if (sample.cpuPercent >= 80 || sample.privateMiB >= policy.memoryMiB * 0.85)
-        return { action: 'run', fps: Math.min(policy.fps, 6), duty: 0.25, reason: 'busy' };
+        return { action: 'run', fps: cappedFps(6), duty: 0.25, reason: 'busy' };
     if (sample.cpuPercent >= 60 || sample.freeMiB < policy.reserveMiB + 256)
-        return { action: 'run', fps: Math.min(policy.fps, 12), duty: 0.4, reason: 'moderate' };
+        return { action: 'run', fps: cappedFps(12), duty: 0.4, reason: 'moderate' };
     if (sample.freeMiB < policy.reserveMiB * 1.5)
-        return { action: 'run', fps: Math.min(policy.fps, 15), duty: 0.5, reason: 'memory-caution' };
-    return { action: 'run', fps: policy.fps, duty: 0.65, reason: 'normal' };
+        return { action: 'run', fps: cappedFps(15), duty: 0.5, reason: 'memory-caution' };
+    // Only wall-clock pacing changes. Every story frame and encoder ACK still
+    // runs in order at the existing fixed 60 Hz simulation timestamp.
+    return { action: 'run', fps: policy.fps, duty: policy.speedMode === 'high-speed' ? 1 : 0.65, reason: 'normal' };
 }
 function frameRest(workMs, decision) {
-    return Math.max(0, 1000 / decision.fps - workMs, workMs * (1 / decision.duty - 1));
+    const intervalMs = decision.fps == null ? 0 : 1000 / decision.fps;
+    return Math.max(0, intervalMs - workMs, workMs * (1 / decision.duty - 1));
 }
 function prerollRest(workMs, steps, decision) {
     // Keep every simulated frame and its Spine render update. Only remove the
@@ -43,25 +55,7 @@ function prerollRest(workMs, steps, decision) {
     const duty = Math.min(decision.duty, 0.4);
     return Math.max(0, 1000 * steps / fps - workMs, workMs * (1 / duty - 1));
 }
-function acquireLock(file) {
-    const token = `${process.pid}-${Date.now()}-${Math.random()}`;
-    try { fs.writeFileSync(file, JSON.stringify({ pid: process.pid, token }), { flag: 'wx' }); }
-    catch (error) {
-        if (error.code !== 'EEXIST') throw error;
-        // Do not reclaim a live/unknown process, even if another job looks old.
-        let old;
-        try { old = JSON.parse(fs.readFileSync(file, 'utf8')); } catch (_) {}
-        if (!Number.isSafeInteger(old?.pid) || old.pid <= 0) throw new Error(`Invalid export lock: ${file}`);
-        try { process.kill(old.pid, 0); }
-        catch (probe) {
-            if (probe.code === 'ESRCH') { fs.unlinkSync(file); return acquireLock(file); }
-        }
-        throw new Error('已有直出任务运行中，请等待完成或取消后再启动。');
-    }
-    return () => {
-        try { if (JSON.parse(fs.readFileSync(file, 'utf8')).token === token) fs.unlinkSync(file); } catch (_) {}
-    };
-}
+const { acquireLock } = require('./lease.cjs');
 function cpuTotals() {
     return os.cpus().reduce((s, c) => ({ idle: s.idle + c.times.idle,
         total: s.total + Object.values(c.times).reduce((a, b) => a + b, 0) }), { idle: 0, total: 0 });
@@ -72,6 +66,7 @@ class Governor {
         this.children = new Set(); this.session = null; this.lastCpu = cpuTotals();
         this.lastSample = 0; this.current = { action: 'run', fps: policy.fps, duty: 0.65 };
         this.cancelled = false; this.started = Date.now(); this.memoryPause = null;
+        this.memorySampler = null;
     }
     updateMemoryPolicy(settings) {
         const memoryMiB = settings?.memoryMiB, reserveMiB = settings?.reserveMiB;
@@ -159,11 +154,9 @@ class Governor {
         for (const pid of ids) { try { os.setPriority(pid, os.constants.priority.PRIORITY_BELOW_NORMAL); } catch (_) {} }
         let privateMiB;
         if (process.platform === 'win32') {
-            const numbers = [...ids].filter(n => Number.isSafeInteger(n) && n > 0).join(',');
-            const script = `$sum=0L; foreach($idValue in @(${numbers})){try{$p=[System.Diagnostics.Process]::GetProcessById($idValue);$sum+=$p.PrivateMemorySize64;$p.Dispose()}catch{}}; [Console]::Write($sum)`;
-            const { stdout } = await execFile('powershell.exe', ['-NoProfile', '-NonInteractive', '-Command', script],
-                { windowsHide: true, timeout: 10000, maxBuffer: 4096 });
-            privateMiB = Number(stdout.trim()) / MiB;
+            this.memorySampler ||= new ProcessMemorySampler();
+            privateMiB = await this.memorySampler.sample([...ids].filter(n => Number.isSafeInteger(n) && n > 0)) / MiB;
+            ids.add(this.memorySampler.pid);
             if (!Number.isFinite(privateMiB) || privateMiB <= 0) throw new Error('Cannot read export process memory');
         } else {
             // Fail closed: a Node-only RSS number must not masquerade as a browser-tree budget.
@@ -191,7 +184,12 @@ class Governor {
             : `直出内存超过 ${this.policy.memoryMiB} MiB 预算，已中止以保护前台使用。`);
         return this.current;
     }
-    async pace(started) { await sleep(frameRest(Date.now() - started, this.current)); }
+    async pace(started) {
+        const rest = frameRest(Date.now() - started, this.current);
+        // setTimeout(0) still schedules a timer. A normal high-speed frame has
+        // already yielded through its encoder ACK and must not add a timer.
+        if (rest > 0) await sleep(rest);
+    }
     async pacePreroll(started, steps) { await sleep(prerollRest(Date.now() - started, steps, this.current)); }
     async allocation(bytes, label) {
         await this.checkpoint(label, true);
@@ -200,8 +198,9 @@ class Governor {
             && sample.freeMiB - mib >= this.policy.reserveMiB;
         if (!fits(this.samples.at(-1))) await this.pauseForMemory(label, 'allocation-budget', mib, fits);
     }
-    report() { return { policy: this.policy, scope: 'Node + owned Chromium processes + active FFmpeg; Windows private bytes; system CPU',
+    async close() { await this.memorySampler?.close(); }
+    report() { return { policy: this.policy, scope: 'Node + owned Chromium processes + active FFmpeg + owned memory sampler; Windows private bytes; system CPU',
         note: 'Cooperative 3-second sampling and preallocation guards, not an OS hard cap or a GPU-memory measurement.',
         peakPrivateMiB: Math.max(0, ...this.samples.map(s => s.privateMiB)), samples: this.samples, events: this.events }; }
 }
-module.exports = { limits, decide, frameRest, prerollRest, acquireLock, Governor };
+module.exports = { limits, decide, frameRest, prerollRest, acquireLock, Governor, SPEED_MODES, validateSpeedMode };

@@ -7,7 +7,7 @@ The upstream player foundation and this fork's additions are identified in
 `README.upstream.md`.
 
 - License: GNU Affero General Public License version 3 (`LICENSE`).
-- Modification date: 2026-10-07.
+- Modification date: 2026-10-09.
 - The Git repository and GitHub source archives include the modified viewer,
   local workshop, launchers, and tests. The separately published Portable ZIP
   contains the runnable viewer/workshop sources but omits development-only tests.
@@ -22,7 +22,7 @@ regular idols/collaboration characters/Hazuki/president, four interaction
 sounds, and tap-effect data.
 The exact list is recorded in `portable-runtime-assets.json`.
 
-The 20261007-r16 builder also includes local copies of Node.js, Playwright,
+The 20261009-r17 builder also includes local copies of Node.js, Playwright,
 and playwright-core for experimental background export. FFmpeg and FFprobe are
 excluded by default; the explicit `-BundleOfflineRuntime` option adds them only
 after the publisher's redistribution review. Notices are described in

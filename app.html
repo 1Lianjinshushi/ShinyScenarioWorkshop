@@ -1,205 +1,228 @@
 <!doctype html>
 <html lang="zh-CN">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Shiny Scenario Workshop</title>
-    <link rel="stylesheet" href="./app.css">
-    <link rel="stylesheet" href="./app-related.css">
-</head>
-<body>
-    <main class="shell">
-        <header class="hero">
-            <div>
-                <p class="eyebrow">SHINY COLORS · LOCAL TOOL</p>
-                <h1>闪耀色彩剧情工坊</h1>
-                <p class="lede">一个工作台完成剧情抓取、原版播放、翻译合成、实时编辑与演出资源修复；资源库集中提供完整目录和更新日志。</p>
-            </div>
-            <div class="hero-tools">
-                <label class="translator-setting" for="translator-name">
-                    <span>全局译者署名</span>
-                    <input id="translator-name" type="text" maxlength="80" autocomplete="off" placeholder="例如：煉金術式">
-                    <small id="translator-note">将自动写入【翻】和【校】CSV</small>
-                </label>
-                <a class="quiet-link" href="./">直接打开播放器</a>
-            </div>
-        </header>
-
-        <section class="panel fetch-panel" aria-labelledby="fetch-title">
-            <div class="panel-body">
-                <div class="section-heading">
-                    <div>
-                        <h2 id="fetch-title">剧情播放、翻译与编辑</h2>
-                        <p>可直接输入序列号，也可导入单篇或整组汉化 CSV 自动识别并载入剧情；日文原版、汉化播放、编辑模式与卡图修复均在此完成。</p>
-                    </div>
-                    <span id="source-badge" class="badge">尚未载入</span>
-                </div>
-
-                <div class="fetch-grid">
-                    <label>
-                        <span>剧情分类</span>
-                        <select id="event-type">
-                            <option value="produce_events">produce_events</option>
-                            <option value="special_communications">special_communications</option>
-                            <option value="game_event_communications">game_event_communications</option>
-                            <option value="mypage_communications">mypage_communications</option>
-                            <option value="produce_communications">produce_communications</option>
-                            <option value="produce_communication_auditions">produce_communication_auditions</option>
-                            <option value="produce_communication_cheers">produce_communication_cheers</option>
-                            <option value="produce_communication_judges">produce_communication_judges</option>
-                            <option value="produce_communication_promise_results">produce_communication_promise_results</option>
-                            <option value="produce_communication_televisions">produce_communication_televisions</option>
-                            <option value="produce_communications_promises">produce_communications_promises</option>
-                            <option value="business_unit_communication">business_unit_communication</option>
-                            <option value="support_skills">support_skills</option>
-                        </select>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Shiny Scenario Workshop</title>
+        <link rel="stylesheet" href="./app.css">
+        <link rel="stylesheet" href="./app-related.css">
+        <link rel="stylesheet" href="./app-workspace.css">
+    </head>
+    <body>
+        <main class="shell workspace-shell">
+            <header class="hero workspace-header">
+                <div><p class="eyebrow">SHINY COLORS · LOCAL WORKSHOP</p><h1>闪耀色彩剧情工坊</h1></div>
+                <div class="hero-tools">
+                    <label class="translator-setting" for="translator-name">
+                        <span>全局译者署名</span>
+                        <input id="translator-name" type="text" maxlength="80" autocomplete="off" placeholder="例如：煉金術式">
+                        <small id="translator-note">将自动写入【翻】和【校】CSV</small>
                     </label>
-                    <label>
-                        <span>剧情序列号</span>
-                        <input id="event-id" inputmode="numeric" value="202701011" autocomplete="off" spellcheck="false">
-                    </label>
-                    <div class="fetch-buttons">
-                        <button id="fetch-scenario" class="primary">抓取当前剧情</button>
-                        <button id="fetch-related">提取关联剧情</button>
-                    </div>
                 </div>
-                <div id="scenario-summary" class="summary-grid" hidden>
-                    <div><strong id="track-count">0</strong><span>轨道</span></div>
-                    <div><strong id="dialogue-count">0</strong><span>对白</span></div>
-                    <div><strong id="speaker-count">0</strong><span>发言人</span></div>
-                    <div><strong id="story-resource-count">0</strong><span>剧情资源</span></div>
-                </div>
+            </header>
+            <aside class="workspace-sidebar">
+                <nav class="workspace-nav" aria-label="工坊主导航">
+                    <button type="button" data-go-workspace="library" aria-controls="game-update-monitor"><span class="nav-index">01</span><span>剧情资源库<small>更新日志 · 完整目录</small></span></button>
+                    <button type="button" data-go-workspace="workbench" aria-controls="workbench" aria-current="page"><span class="nav-index">02</span><span>翻译工作台<small>载入 · 编辑 · 预览</small></span></button>
+                    <button type="button" data-go-workspace="export" aria-controls="offline-export-panel"><span class="nav-index">03</span><span>后台直出<small>待导出 · 运行进度</small></span></button>
+                    <button type="button" data-go-workspace="maintenance" aria-controls="maintenance"><span class="nav-index">04</span><span>维护与帮助<small>监听 · 资料 · 使用指南</small></span></button>
+                </nav>
+                <a class="quiet-link" href="./" target="_blank" rel="noopener">独立播放器 ↗</a>
+                <p class="workspace-nav-note">切换页面不会清空当前剧情，也不会中断后台直出。</p>
+            </aside>
+            <div class="workspace-context" aria-label="当前工作状态">
+                <div><span class="context-label">当前剧情</span><strong id="workspace-story">尚未载入</strong><span id="workspace-csv">可导入 CSV，或从资源库选择剧情</span></div>
+                <button type="button" id="workspace-export-status" data-go-workspace="export">直出状态检测中</button>
+            </div>
+            <div class="workspace-content">
+                <section class="panel fetch-panel" id="workbench" data-workspace-view="workbench" aria-labelledby="fetch-title">
+                    <div class="panel-body">
+                        <div class="section-heading"><div><p class="workspace-kicker">TRANSLATE & PREVIEW</p><h2 id="fetch-title" tabindex="-1">翻译工作台</h2><p>从 CSV 开始翻译，或按编号载入原版剧情。</p></div><span id="source-badge" class="badge">尚未载入</span></div>
+                        <section class="workspace-section" aria-labelledby="translation-title">
+                            <div class="workspace-section-heading"><h3 id="translation-title">01 · 载入剧情</h3><span id="translation-badge" class="badge">未选择 CSV</span></div>
+                            <div class="translation-import-grid">
+                                <label class="file-drop" for="translation-csv">
+                                    <input id="translation-csv" type="file" accept=".csv,text/csv">
+                                    <span class="file-title">导入单篇汉化 CSV 并直接载入</span>
+                                    <span id="file-name" class="file-name">未选择文件</span>
+                                </label>
+                                <label class="file-drop" for="translation-batch">
+                                    <input id="translation-batch" type="file" accept=".csv,text/csv" multiple>
+                                    <span class="file-title">批量导入关联剧情 CSV 并载入首篇</span>
+                                    <span class="file-name">逐份读取 id 列、自动判断分类并建立可切换的关联列表</span>
+                                </label>
+                            </div>
+                            <div id="translation-batch-report" class="report" hidden></div>
+                            <div id="translation-report" class="report" hidden></div>
+                            <details class="workspace-details" id="fetch-by-id"><summary>按编号抓取 / 提取关联剧情</summary><div class="details-body"><div class="fetch-grid">
+                                        <label>
+                                            <span>剧情分类</span>
+                                            <select id="event-type">
+                                                <option value="produce_events">produce_events</option>
+                                                <option value="special_communications">special_communications</option>
+                                                <option value="game_event_communications">game_event_communications</option>
+                                                <option value="mypage_communications">mypage_communications</option>
+                                                <option value="produce_communications">produce_communications</option>
+                                                <option value="produce_communication_auditions">produce_communication_auditions</option>
+                                                <option value="produce_communication_cheers">produce_communication_cheers</option>
+                                                <option value="produce_communication_judges">produce_communication_judges</option>
+                                                <option value="produce_communication_promise_results">produce_communication_promise_results</option>
+                                                <option value="produce_communication_televisions">produce_communication_televisions</option>
+                                                <option value="produce_communications_promises">produce_communications_promises</option>
+                                                <option value="business_unit_communication">business_unit_communication</option>
+                                                <option value="support_skills">support_skills</option>
+                                            </select>
+                                        </label>
+                                        <label>
+                                            <span>剧情序列号</span>
+                                            <input id="event-id" inputmode="numeric" value="202701011" autocomplete="off" spellcheck="false">
+                                        </label>
+                                        <div class="fetch-buttons">
+                                            <button id="fetch-scenario" class="primary">抓取当前剧情</button>
+                                            <button id="fetch-related">提取关联剧情</button>
+                                        </div>
+                                    </div></div></details>
+                        </section>
+                        <section class="workspace-section" aria-labelledby="current-chapter-title">
+                            <h3 id="current-chapter-title">02 · 当前篇章</h3>
+                            <div class="translation-related-switch">
+                                <label for="translation-related-select">
+                                    <span>关联剧情</span>
+                                    <select id="translation-related-select" disabled>
+                                        <option value="">尚未检索关联剧情</option>
+                                    </select>
+                                </label>
+                                <button id="translation-related" type="button">切换关联剧情</button>
+                            </div>
+                            <div id="scenario-summary" class="summary-grid" hidden>
+                                <div><strong id="track-count">0</strong><span>轨道</span></div>
+                                <div><strong id="dialogue-count">0</strong><span>对白</span></div>
+                                <div><strong id="speaker-count">0</strong><span>发言人</span></div>
+                                <div><strong id="story-resource-count">0</strong><span>剧情资源</span></div>
+                            </div>
+                            <details class="workspace-details" id="related-details"><summary>关联剧情提取结果</summary><div class="details-body"><div id="related-results" class="related-results" hidden>
+                                        <div class="related-heading">
+                                            <strong>关联剧情提取结果</strong>
+                                            <span id="related-badge" class="badge">尚未检索</span>
+                                        </div>
+                                        <div id="related-list" class="related-list"></div>
+                                    </div></div></details>
+                        </section>
+                        <section class="workspace-section" aria-labelledby="edit-preview-title">
+                            <h3 id="edit-preview-title">03 · 编辑与预览</h3>
+                            <p class="workspace-hint">编辑模式中修改台词；保存后的内容会同步回工坊。</p>
+                            <div class="action-row">
+                                <button id="play-edit" class="primary" disabled>编辑模式播放</button>
+                                <button id="play-chinese" disabled>保存 CSV 并播放汉化版</button>
+                                <button id="play-japanese" disabled>播放日文原版</button>
+                            </div>
+                            <details class="workspace-details" id="speaker-details">
+                                <summary class="subsection-heading">
+                                    <div>
+                                        <span id="speaker-title">发言人译名</span>
 
-                <div class="action-row">
-                    <button id="download-japanese" disabled>下载原版 JSON</button>
-                    <button id="play-japanese" disabled>播放日文原版</button>
-                    <button id="cache-resources" disabled>重新检查本地缓存</button>
-                    <button id="play-local" disabled>离线播放</button>
-                </div>
-                <div id="cache-progress" class="progress-block" hidden>
-                    <div class="progress-track"><span id="cache-progress-bar"></span></div>
-                    <p id="cache-progress-text">载入剧情后会自动缓存；播放时本地优先、缺失项联网补齐。</p>
-                </div>
-                <div id="support-still-panel" class="support-still-panel" hidden>
-                    <div class="support-still-heading">
-                        <div>
-                            <strong>Support 卡静态演出图</strong>
-                            <p>自动优先检查本地文件，再尝试从资源站补取；远端尚未更新时可用页游截图代替。</p>
-                        </div>
-                        <span id="support-still-badge" class="badge">等待检查</span>
-                    </div>
-                    <div id="support-still-list" class="support-still-list"></div>
-                    <p class="support-still-note">本地截图会居中缩放为 1136×640 JPEG，并按演出引用的卡图 ID 留档。Produce 卡动态卡图不会被替换。</p>
-                </div>
-                <div id="card-movie-panel" class="support-still-panel" hidden>
-                    <div class="support-still-heading">
-                        <div>
-                            <strong>Produce 卡动态演出视频</strong>
-                            <p>在线播放失败时，可将同一卡图 ID 的 MP4 绑定到本地；其余剧情资源仍可继续在线读取。</p>
-                        </div>
-                        <span id="card-movie-badge" class="badge">等待检查</span>
-                    </div>
-                    <div id="card-movie-list" class="support-still-list"></div>
-                    <p class="support-still-note">目标文件为 <code>assets/movies/idols/card/&lt;卡图ID&gt;.mp4</code>，单个文件上限 120 MB。若轨道另有同 ID 音效，仍会按剧情中的 SE 路径单独读取。</p>
-                </div>
-                <div id="related-results" class="related-results" hidden>
-                    <div class="related-heading">
-                        <strong>关联剧情提取结果</strong>
-                        <span id="related-badge" class="badge">尚未检索</span>
-                    </div>
-                    <div id="related-list" class="related-list"></div>
-                </div>
-                <div class="workbench-divider"></div>
-                <div class="section-heading subsection-main-heading">
-                    <div>
-                        <h3 id="translation-title">翻译合成与编辑</h3>
-                        <p>导入 CSV 后会自动判断剧情分类、抓取对应日文原版并载入；批量导入会建立关联剧情列表并打开首篇。</p>
-                    </div>
-                    <span id="translation-badge" class="badge">未选择 CSV</span>
-                </div>
-
-                <section class="workflow-subsection" aria-labelledby="speaker-title">
-                    <div class="subsection-heading">
-                        <div>
-                            <h3 id="speaker-title">发言人译名</h3>
-                            <p>与 <code>speaker.csv</code> 对照，只列出当前剧情中尚未留档的日文名称。</p>
-                        </div>
-                        <span id="speaker-badge" class="badge">等待剧情</span>
-                    </div>
-                    <div id="speaker-empty" class="empty-state">载入剧情后会在这里列出缺失名称。</div>
-                    <div id="speaker-editor" class="speaker-editor" hidden></div>
-                    <div class="action-row">
-                        <button id="save-speakers" disabled>保存发言人译名</button>
-                        <span id="speaker-archive-path" class="path-note"></span>
+                                    </div>
+                                    <span id="speaker-badge" class="badge">等待剧情</span>
+                                </summary><div class="details-body">
+                                    <div id="speaker-empty" class="empty-state">载入剧情后会在这里列出缺失名称。</div>
+                                    <div id="speaker-editor" class="speaker-editor" hidden></div>
+                                    <div class="action-row">
+                                        <button id="save-speakers" disabled>保存发言人译名</button>
+                                        <span id="speaker-archive-path" class="path-note"></span>
+                                    </div>
+                                </div></details>
+                        </section>
+                        <details class="workspace-details workspace-resources" id="story-resources">
+                            <summary><span>当前剧情资源</span><span id="workspace-resource-status" class="summary-meta">载入后自动检查</span></summary>
+                            <div class="details-body"><div class="action-row"><button id="cache-resources" disabled>重新检查本地缓存</button><button id="play-local" disabled>离线播放</button></div>
+                                <div id="cache-progress" class="progress-block" hidden>
+                                    <div class="progress-track"><span id="cache-progress-bar"></span></div>
+                                    <p id="cache-progress-text">载入剧情后会自动缓存；播放时本地优先、缺失项联网补齐。</p>
+                                </div>
+                                <div id="support-still-panel" class="support-still-panel" hidden>
+                                    <div class="support-still-heading">
+                                        <div>
+                                            <strong>Support 卡静态演出图</strong>
+                                            <p>自动优先检查本地文件，再尝试从资源站补取；远端尚未更新时可用页游截图代替。</p>
+                                        </div>
+                                        <span id="support-still-badge" class="badge">等待检查</span>
+                                    </div>
+                                    <div id="support-still-list" class="support-still-list"></div>
+                                    <p class="support-still-note">本地截图会居中缩放为 1136×640 JPEG，并按演出引用的卡图 ID 留档。Produce 卡动态卡图不会被替换。</p>
+                                </div>
+                                <div id="card-movie-panel" class="support-still-panel" hidden>
+                                    <div class="support-still-heading">
+                                        <div>
+                                            <strong>Produce 卡动态演出视频</strong>
+                                            <p>在线播放失败时，可将同一卡图 ID 的 MP4 绑定到本地；其余剧情资源仍可继续在线读取。</p>
+                                        </div>
+                                        <span id="card-movie-badge" class="badge">等待检查</span>
+                                    </div>
+                                    <div id="card-movie-list" class="support-still-list"></div>
+                                    <p class="support-still-note">目标文件为 <code>assets/movies/idols/card/&lt;卡图ID&gt;.mp4</code>，单个文件上限 120 MB。若轨道另有同 ID 音效，仍会按剧情中的 SE 路径单独读取。</p>
+                                </div></div>
+                        </details>
+                        <section class="workspace-section" aria-labelledby="handoff-title">
+                            <h3 id="handoff-title">04 · 保存与直出</h3>
+                            <div class="action-row">
+                                <button id="download-japanese" disabled>下载原版 JSON</button>
+                                <button id="build-translation" disabled>另存汉化 JSON</button>
+                                <button type="button" data-workspace-click="offline-export-zh" disabled>当前汉化加入待导出</button>
+                                <button type="button" data-go-workspace="export">查看直出队列 →</button>
+                            </div>
+                        </section>
                     </div>
                 </section>
 
-                <div class="translation-import-grid">
-                    <label class="file-drop" for="translation-csv">
-                        <input id="translation-csv" type="file" accept=".csv,text/csv">
-                        <span class="file-title">导入单篇汉化 CSV 并直接载入</span>
-                        <span id="file-name" class="file-name">未选择文件</span>
-                    </label>
-                    <label class="file-drop" for="translation-batch">
-                        <input id="translation-batch" type="file" accept=".csv,text/csv" multiple>
-                        <span class="file-title">批量导入关联剧情 CSV 并载入首篇</span>
-                        <span class="file-name">逐份读取 id 列、自动判断分类并建立可切换的关联列表</span>
-                    </label>
-                </div>
-
-                <div id="translation-batch-report" class="report" hidden></div>
-                <div id="translation-report" class="report" hidden></div>
-                <div class="translation-related-switch">
-                    <label for="translation-related-select">
-                        <span>关联剧情</span>
-                        <select id="translation-related-select" disabled>
-                            <option value="">尚未检索关联剧情</option>
-                        </select>
-                    </label>
-                    <button id="translation-related" type="button">切换关联剧情</button>
-                </div>
-                <div class="action-row">
-                    <button id="build-translation" disabled>另存汉化 JSON</button>
-                    <button id="play-chinese" class="primary" disabled>保存 CSV 并播放汉化版</button>
-                    <button id="play-edit" disabled>编辑模式播放</button>
-                </div>
-                <details class="offline-export-panel" id="offline-export-panel">
-                    <summary><span>后台直出</span><span id="offline-export-badge" class="badge">正在检测</span></summary>
-                    <div class="offline-export-body">
-                        <p class="offline-export-note">先加入列表，再勾选开始。完整剧情 · 1080p60 · 后台依次导出</p>
-                        <div class="offline-export-install">
-                            <a class="button-link" href="https://www.bilibili.com/read/cv33507583/" target="_blank" rel="noopener noreferrer">FFmpeg 安装图文教程 ↗</a>
-                            <span>将 <code>ffmpeg.exe</code>、<code>ffprobe.exe</code> 放进工坊 <code>tools</code>，或按直出教程 PDF 设置两个绝对路径。</span>
-                        </div>
-                        <div class="offline-export-controls">
-                            <button id="offline-export-zh" disabled>加入当前汉化</button>
-                            <button id="offline-export-ja" disabled>加入当前日文</button>
-                            <button id="offline-export-import" type="button">批量导入 JSON</button>
-                            <input id="offline-export-files" type="file" accept=".json,application/json" multiple hidden disabled>
-                        </div>
-                        <section class="offline-export-section offline-export-related" aria-labelledby="offline-export-related-title">
-                            <div class="offline-export-section-heading">
-                                <div><h3 id="offline-export-related-title">批量汉化直出</h3><p id="offline-export-related-summary" class="offline-export-note">批量导入关联剧情 CSV 后，会自动拉取各篇日文原版、合成汉化并勾选入待导出列表。</p></div>
-                            </div>
-                            <div id="offline-export-related-list" class="offline-export-related-list" hidden></div>
-                            <p class="offline-export-note offline-export-related-help">发言人未补齐仅提示；必要资源若在直出预检时仍无法取得，会拦截该篇生成。</p>
+                <section class="offline-export-panel panel" id="offline-export-panel" data-workspace-view="export" aria-labelledby="export-title" hidden>
+                    <div class="panel-body offline-export-body">
+                        <div class="section-heading"><div><p class="workspace-kicker">BACKGROUND EXPORT</p><h2 id="export-title" tabindex="-1">后台直出</h2><p>完整剧情 · 1080p60 · 最多双线并行。加入后勾选，不自动开始。</p></div><span id="offline-export-badge" class="badge">正在检测</span></div>
+                        <div class="export-top-actions"><button id="offline-export-open-root" type="button">打开统一保存目录 ↗</button><button type="button" data-go-workspace="maintenance">环境配置与教程</button></div>
+                        <p id="offline-export-message" class="offline-export-note offline-export-message" role="status" aria-live="polite"></p>
+                        <section id="offline-export-active-section" class="offline-export-section" aria-labelledby="offline-export-active-title" hidden>
+                            <div class="offline-export-section-heading"><h3 id="offline-export-active-title">运行与暂停</h3><span id="offline-export-active-count" class="summary-meta"></span></div>
+                            <div id="offline-export-active-jobs" class="offline-export-jobs"></div>
                         </section>
-                        <section class="offline-export-section offline-export-memory-settings" aria-labelledby="offline-export-memory-title">
-                            <h3 id="offline-export-memory-title">导出内存设置</h3>
-                            <div class="offline-export-memory-grid">
-                                <label for="offline-export-memory-limit">
-                                    <span>直出进程内存上限</span>
-                                    <span class="offline-export-memory-input"><input id="offline-export-memory-limit" type="number" min="512" max="8192" step="1" inputmode="numeric" disabled><span>MiB</span></span>
-                                    <small id="offline-export-memory-default">正在读取默认值</small>
-                                </label>
-                                <label for="offline-export-memory-reserve">
-                                    <span>系统空闲内存预留</span>
-                                    <span class="offline-export-memory-input"><input id="offline-export-memory-reserve" type="number" min="1024" max="8192" step="1" inputmode="numeric" disabled><span>MiB</span></span>
-                                    <small id="offline-export-reserve-default">正在读取默认值</small>
-                                </label>
+                        <section class="offline-export-section" aria-labelledby="export-add-title">
+                            <h3 id="export-add-title">加入待导出</h3>
+                            <div class="offline-export-controls">
+                                <button id="offline-export-zh" disabled>加入当前汉化</button>
+                                <button id="offline-export-ja" disabled>加入当前日文</button>
+                                <button type="button" data-workspace-click="translation-batch">批量导入 CSV</button>
+                                <button id="offline-export-import" type="button">批量导入 JSON</button>
+                                <input id="offline-export-files" type="file" accept=".json,application/json" multiple hidden disabled>
                             </div>
-                            <p class="offline-export-memory-note">调高进程上限可能减少因内存预算触发的人工暂停，但不一定提速，也不能解决系统空闲内存不足。降低空闲内存预留可能减少暂停，却会增加前台卡顿或系统缺内存的风险；CPU 忙碌时的限速仍会生效。这里的设置只作用于之后开始的导出任务。</p>
-                            <button id="offline-export-memory-reset" type="button" disabled>恢复默认</button>
+                            <details class="workspace-details"><summary>批量 CSV 导入状态</summary><div class="details-body"><section class="offline-export-section offline-export-related" aria-labelledby="offline-export-related-title">
+                                        <div class="offline-export-section-heading">
+                                            <div><h3 id="offline-export-related-title">批量汉化直出</h3><p id="offline-export-related-summary" class="offline-export-note">批量导入关联剧情 CSV 后，会自动拉取各篇日文原版、合成汉化并勾选入待导出列表。</p></div>
+                                        </div>
+                                        <div id="offline-export-related-list" class="offline-export-related-list" hidden></div>
+                                        <p class="offline-export-note offline-export-related-help">发言人未补齐仅提示；必要资源若在直出预检时仍无法取得，会拦截该篇生成。</p>
+                                    </section></div></details>
+                        </section>
+                        <section class="offline-export-section" aria-labelledby="offline-export-speed-title">
+                            <div class="offline-export-section-heading"><h3 id="offline-export-speed-title">生成与检查</h3></div>
+                            <div class="offline-export-memory-grid export-options-grid">
+                                <label for="offline-export-speed-mode"><span>速度模式</span>
+                                    <select id="offline-export-speed-mode" aria-describedby="offline-export-speed-note" disabled>
+                                        <option value="low-load">低负载 · 适合边用电脑边导出</option>
+                                        <option value="high-speed">高速 · 正常负载不限速</option>
+                                    </select></label>
+                                <label for="offline-export-concurrency"><span>同时导出任务数</span>
+                                    <select id="offline-export-concurrency" aria-describedby="offline-export-concurrency-note" disabled>
+                                        <option value="1">单线 · 一次生成一篇</option>
+                                        <option value="2" selected>双线 · 最多同时生成两篇</option>
+                                    </select></label>
+                                <label for="offline-export-verification-mode"><span>成片检查</span>
+                                    <select id="offline-export-verification-mode" aria-describedby="offline-export-verification-note" disabled>
+                                        <option value="auto" selected>自动检查 · 正常时快速，异常时完整</option>
+                                        <option value="quick">仅快速检查 · 不自动升级</option>
+                                        <option value="full">完整检查 · 额外逐帧解码</option>
+                                    </select></label>
+                            </div>
+
+
+
                         </section>
                         <section class="offline-export-section offline-export-queue" aria-labelledby="offline-export-queue-title">
                             <div class="offline-export-section-heading"><h3 id="offline-export-queue-title">待导出列表</h3><span id="offline-export-count">0 项</span></div>
@@ -207,60 +230,98 @@
                             <div class="offline-export-toolbar">
                                 <label class="offline-export-select-all"><input id="offline-export-all" type="checkbox" disabled>全选待导出</label>
                                 <button id="offline-export-start" class="primary" disabled>开始导出</button>
-                                <button id="offline-export-open-root" type="button">打开保存目录</button>
+
                             </div>
                         </section>
-                        <p id="offline-export-message" class="offline-export-note offline-export-message" role="status" aria-live="polite"></p>
-                        <p class="offline-export-note offline-export-help">加入时保存内容快照，不修改 CSV；开始后可关闭网页，请保持本机服务运行。三选项按中→左→右，每次停留 3 秒，整片末尾停留 2 秒。暂不支持两选项、多组或嵌套分支。</p>
+                        <details class="workspace-details"><summary>高级设置与导出规则</summary><div class="details-body">
+                                <section class="offline-export-section offline-export-memory-settings" aria-labelledby="offline-export-memory-title">
+                                    <h3 id="offline-export-memory-title">导出内存设置</h3>
+                                    <div class="offline-export-memory-grid">
+                                        <label for="offline-export-memory-limit">
+                                            <span>每任务内存上限</span>
+                                            <span class="offline-export-memory-input"><input id="offline-export-memory-limit" type="number" min="512" max="8192" step="1" inputmode="numeric" disabled><span>MiB</span></span>
+                                            <small id="offline-export-memory-default">正在读取默认值</small>
+                                        </label>
+                                        <label for="offline-export-memory-reserve">
+                                            <span>系统空闲内存预留</span>
+                                            <span class="offline-export-memory-input"><input id="offline-export-memory-reserve" type="number" min="1024" max="8192" step="1" inputmode="numeric" disabled><span>MiB</span></span>
+                                            <small id="offline-export-reserve-default">正在读取默认值</small>
+                                        </label>
+                                    </div>
+                                    <p class="offline-export-memory-note">上限按每个任务计算，双线最多有两份任务内存占用；系统空闲预留按整台电脑检查。调高上限不一定提速；降低空闲预留会增加前台卡顿风险。CPU 忙碌时仍会降速。设置只作用于之后开始的任务。</p>
+                                    <button id="offline-export-memory-reset" type="button" disabled>恢复默认</button>
+                                </section>
+                                <h3>速度、并行与成片检查</h3>
+                                <p id="offline-export-verification-note" class="offline-export-note">默认自动：复用已有负载采样，不增加逐帧检查。正常时快速核对轨道、帧数、时间戳和时长；仅生成／合成／封装期间触发内存暂停，才在成片后追加完整解码。CPU 忙碌、共享通道等待和资源预检暂停不触发升级。完整检查更耗时，但不占混音锁；均不改写成片，也不能替代人工检查演出。</p>
+                                <p id="offline-export-concurrency-note" class="offline-export-note">双线适合批量导出；只有一篇时仅启动一个任务，不会将剧情拆开。两篇的画面生成可并行，大块内存分配与混音等阶段会错峰；内存不足时保留任务并暂停。</p>
+                                <p id="offline-export-speed-note" class="offline-export-note">两种模式均输出 1080p60，画质和剧情速度不变。高速模式在正常负载下取消生成帧率上限和固定等待，每帧仍等待编码完成；CPU 忙碌或内存余量偏低时降速，内存不足时暂停。仅对之后开始的任务生效，会增加机器负载。</p>
+                                <p class="offline-export-note offline-export-help">加入时保存内容快照，不修改 CSV；开始后可关闭网页，请保持本机服务运行。三选项按中→左→右，每次停留 3 秒，整片末尾停留 2 秒。暂不支持两选项、多组或嵌套分支。</p>
+                            </div></details>
                     </div>
-                </details>
-            </div>
-        </section>
+                </section>
 
-        <!-- LOCAL_MONITOR_BEGIN -->
-        <section id="game-update-monitor" class="panel" aria-labelledby="game-update-title">
-            <div class="panel-body">
-                <div class="section-heading">
-                    <div>
-                        <h2 id="game-update-title">剧情资源库与更新日志</h2>
-                        <p>轻量监听剧情 JSON、卡名与单话标题；卡图和动态卡图不会后台下载，只在打开实际使用它们的剧情时向当前页游会话按需请求。</p>
+                <!-- LOCAL_MONITOR_BEGIN -->
+                <section id="game-update-monitor" class="panel" data-workspace-view="library" aria-labelledby="game-update-title" hidden>
+                    <div class="panel-body">
+                        <div class="section-heading"><div><p class="workspace-kicker">SCENARIO LIBRARY</p><h2 id="game-update-title" tabindex="-1">剧情资源库</h2><p>从更新日志查看新内容，或按活动、育成、特殊剧情和角色浏览。</p></div><span id="game-update-badge" class="badge">尚未建立基线</span></div>
+                        <div class="library-toolbar">
+                            <div class="library-tabs" role="tablist" aria-label="资源库视图">
+                                <button id="library-tab-updates" type="button" role="tab" aria-selected="true" aria-controls="library-pane-updates" data-library-tab="updates">更新日志</button>
+                                <button id="library-tab-all" type="button" role="tab" aria-selected="false" aria-controls="library-pane-all" tabindex="-1" data-library-tab="all">完整资源库</button>
+                            </div>
+                            <div class="monitor-actions"><button id="game-update-refresh">刷新列表</button><button id="game-update-acknowledge" disabled>全部标为已读</button></div>
+                        </div>
+                        <div id="game-update-list" class="monitor-list"><div class="empty-state">等待页游监听脚本送来第一份资源清单。</div></div>
                     </div>
-                    <span id="game-update-badge" class="badge">尚未建立基线</span>
-                </div>
-                <div class="monitor-actions">
-                    <a class="button-link primary" href="./scripts/ShinyScenarioUpdateMonitor.user.js" target="_blank" rel="noopener noreferrer">安装／更新监听脚本</a>
-                    <a class="button-link" href="https://shinycolors.enza.fun/" target="_blank" rel="noreferrer">打开页游并检查</a>
-                    <button id="game-update-refresh">刷新列表</button>
-                    <button id="game-update-rebuild-labels">补全全库名称</button>
-                    <button id="game-update-acknowledge" disabled>全部标为已读</button>
-                </div>
-                <p class="monitor-note monitor-install-note">Chrome 需先安装并启用 Tampermonkey 或 Violentmonkey；若扩展“详情”页提供“允许用户脚本”，也请将其打开。点击安装后若新标签页只显示脚本源码，说明脚本管理器缺失或未启用。</p>
-                <p id="game-update-note" class="monitor-note">安装／更新监听脚本后，只需刷新一次已登录的页游。脚本会被动读取资源清单，并结合公开主数据补全卡名与剧情标题；它不主动调用页游认证接口。首次扫描只建立基线，不会把已有剧情全部报成更新。</p>
-                <div id="game-update-list" class="monitor-list">
-                    <div class="empty-state">等待页游监听脚本送来第一份资源清单。</div>
-                </div>
+                </section>
+                <!-- LOCAL_MONITOR_END -->
+
+                <section id="maintenance" class="panel" data-workspace-view="maintenance" aria-labelledby="maintenance-title" hidden>
+                    <div class="panel-body">
+                        <div class="section-heading"><div><p class="workspace-kicker">TOOLS & HELP</p><h2 id="maintenance-title" tabindex="-1">维护与帮助</h2><p>页游监听、名称补全与使用说明集中在这里。</p></div></div>
+                        <section class="workspace-section" aria-labelledby="listener-title"><h3 id="listener-title">页游监听与名称资料</h3>
+                            <p class="workspace-hint">监听只补充资源目录和标题；卡图、动态卡图仍按使用需求获取。</p>
+                            <div class="monitor-actions">
+                                <a class="button-link primary" href="./scripts/ShinyScenarioUpdateMonitor.user.js" target="_blank" rel="noopener noreferrer">安装／更新监听脚本</a>
+                                <a class="button-link" href="https://shinycolors.enza.fun/" target="_blank" rel="noreferrer">打开页游并检查</a>
+                                <button id="game-update-rebuild-labels">补全全库名称</button>
+                            </div>
+                            <p id="game-update-note" class="monitor-note">安装／更新监听脚本后，只需刷新一次已登录的页游。脚本会被动读取资源清单，并结合公开主数据补全卡名与剧情标题；它不主动调用页游认证接口。首次扫描只建立基线，不会把已有剧情全部报成更新。</p>
+                            <details class="workspace-details"><summary>脚本安装遇到问题？</summary><div class="details-body"><p class="monitor-note monitor-install-note">Chrome 需先安装并启用 Tampermonkey 或 Violentmonkey；若扩展“详情”页提供“允许用户脚本”，也请将其打开。点击安装后若新标签页只显示脚本源码，说明脚本管理器缺失或未启用。</p></div></details>
+                        </section>
+                        <section class="workspace-section" aria-labelledby="help-export-title"><h3 id="help-export-title">直出环境与使用指南</h3>
+                            <div class="offline-export-install">
+                                <a class="button-link" href="https://www.bilibili.com/read/cv33507583/" target="_blank" rel="noopener noreferrer">FFmpeg 安装图文教程 ↗</a>
+                                <span>将 <code>ffmpeg.exe</code>、<code>ffprobe.exe</code> 放进工坊 <code>tools</code>，或按直出教程 PDF 设置两个绝对路径。</span>
+                            </div>
+                            <div class="help-links">
+                                <a href="./output/pdf/ShinyScenarioWorkshop-Quick-Guide.pdf" data-help-fallback="./Quick-Guide-ZH.pdf" target="_blank" rel="noopener">工坊使用说明 PDF ↗</a>
+                                <a href="./output/pdf/ShinyScenarioWorkshop-Offline-Export-Guide.pdf" data-help-fallback="./Offline-Export-Guide-ZH.pdf" target="_blank" rel="noopener">后台直出专用教程 PDF ↗</a>
+                            </div>
+                        </section>
+                        <section class="workspace-section" aria-labelledby="maintenance-log-title"><h3 id="maintenance-log-title">维护日志</h3>
+                            <div class="help-links"><a href="./CHANGELOG.md" target="_blank" rel="noopener">查看完整版本维护日志 ↗</a><a href="./SHARING-GUIDE-ZH.md" target="_blank" rel="noopener">分享与安装说明 ↗</a></div>
+                            <p class="workspace-hint">本次布局调整仅整理入口；播放器、翻译与直出的处理规则保持不变。</p>
+                        </section>
+                    </div>
+                </section>
             </div>
-        </section>
+            <footer><span id="global-status" role="status" aria-live="polite">本地应用已就绪。</span></footer>
+        </main>
+        <script src="./scripts/WorkspaceNavigation.js"></script>
+        <script src="./scripts/Constants.js"></script>
+        <script src="./scripts/SupportStillFallback.js"></script>
+        <script src="./scripts/CsvTranslation.js"></script>
+        <script src="./scripts/ScenarioStoryMetadata.js"></script>
+        <script src="./scripts/RelatedScenarioSearch.js"></script>
+        <script src="./app.js"></script>
+        <script src="./scripts/OfflineBatchCsvQueue.js"></script>
+        <script src="./scripts/AppOfflineExport.js"></script>
+        <script src="./scripts/AppRelatedScenario.js"></script>
+        <!-- LOCAL_MONITOR_BEGIN -->
+        <script src="./scripts/GameUpdateMonitorCore.js"></script>
+        <script src="./scripts/GameUpdateMonitorApp.js"></script>
         <!-- LOCAL_MONITOR_END -->
 
-        <footer>
-            <span id="global-status" role="status" aria-live="polite">本地应用已就绪。</span>
-        </footer>
-    </main>
-
-
-    <script src="./scripts/Constants.js"></script>
-    <script src="./scripts/SupportStillFallback.js"></script>
-    <script src="./scripts/CsvTranslation.js"></script>
-    <script src="./scripts/ScenarioStoryMetadata.js"></script>
-    <script src="./scripts/RelatedScenarioSearch.js"></script>
-    <script src="./app.js"></script>
-    <script src="./scripts/OfflineBatchCsvQueue.js"></script>
-    <script src="./scripts/AppOfflineExport.js"></script>
-    <script src="./scripts/AppRelatedScenario.js"></script>
-    <!-- LOCAL_MONITOR_BEGIN -->
-    <script src="./scripts/GameUpdateMonitorCore.js"></script>
-    <script src="./scripts/GameUpdateMonitorApp.js"></script>
-    <!-- LOCAL_MONITOR_END -->
-</body>
+    </body>
 </html>

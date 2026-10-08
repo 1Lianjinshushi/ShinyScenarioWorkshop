@@ -9,12 +9,16 @@ const cp = require('node:child_process');
 const os = require('node:os');
 const { once } = require('node:events');
 const { performance } = require('node:perf_hooks');
-const { limits, acquireLock, Governor } = require('./governor.cjs');
+const { limits, Governor } = require('./governor.cjs');
+const { acquireWorker, withLease } = require('./lease.cjs');
 const { Preflight, hashFile } = require('./preflight.cjs');
-const { profile, audioMemoryBytes } = require('./profile.cjs');
+const { profile, audioMemoryBytes, AUDIO_PCM_FORMAT, validAudioCache, validateDecodedAudio } = require('./profile.cjs');
 const { addMedia } = require('./audio-merge.cjs');
 const { cleanup } = require('./cleanup.cjs');
 const { exportLanguage } = require('./language.cjs');
+const { DecodedCache } = require('./decoded-cache.cjs');
+const { quickVerify, VerificationPolicy } = require('./verify.cjs');
+const verificationPolicy = new VerificationPolicy(process.env.SSV_PROOF_VERIFICATION || 'auto');
 const root = path.resolve(__dirname, '../..');
 const input = process.argv[2] || '4902005026';
 const inputFile = /^\d+$/.test(input) ? null : path.resolve(input);
@@ -28,6 +32,7 @@ const options = { trimEnd: true, branchPreview: mode === 'branch-preview' || pro
     diagnostics: runProfile.diagnostics, language: exportLanguage(process.env.SSV_PROOF_LANGUAGE, inputFile) };
 const maxSeconds = 20 * 60;
 const policy = limits();
+options.framePipeline = policy.speedMode === 'high-speed' && process.env.SSV_PROOF_PIPELINE !== '0';
 const wallFps = policy.fps;
 const baseOutput = path.join(root, 'exports', 'offline-proof', eventId);
 const runTag = process.env.SSV_PROOF_RUN_TAG || '';
@@ -48,19 +53,62 @@ const chromium = process.env.SSV_CHROMIUM || [
 const playwright = require(process.env.SSV_PLAYWRIGHT || path.join(os.homedir(),
     '.cache/codex-runtimes/codex-primary-runtime/dependencies/node/node_modules/playwright'));
 const sha = bytes => crypto.createHash('sha256').update(bytes).digest('hex');
+// A browser/FFmpeg replacement invalidates decoded derivatives. No credential
+// or source asset is copied into this bounded, disposable cache.
+const binaryIdentity = file => { try { const s = fs.statSync(file); return [file, s.size, s.mtimeMs]; } catch (_) { return [file, 'missing']; } };
+const cacheNamespace = sha(JSON.stringify([AUDIO_PCM_FORMAT, binaryIdentity(chromium), binaryIdentity(ffmpeg), 'movie-png-v1'])).slice(0, 16);
+const decodedCache = process.env.SSV_PROOF_DECODE_CACHE === '0' ? null : new DecodedCache(
+    path.join(root, 'exports/.decoded-cache'), cacheNamespace, async () => {
+        // Cache operations stream small buffers. Never wait for manual memory
+        // approval while owning the shared cache lease.
+        if (governor.cancelled) throw new Error('Export cancelled');
+    }, undefined, waitHooks('等待另一任务完成缓存读写'));
+const withAllocation = (bytes, phase, work) => withLease(path.join(root, 'exports/.offline-allocation.lock'),
+    () => governor.checkpoint(phase), async () => {
+        // Sample after obtaining the lease, not before a peer's allocation.
+        await governor.allocation(bytes, phase);
+        return work();
+    }, waitHooks('等待另一任务释放大块内存处理通道（' + phase + '）'));
 const json = (name, value) => fs.writeFileSync(path.join(output, name), JSON.stringify(value, null, 2));
+const stageTimings = [], waitTimings = [];
+function waitHooks(reason) {
+    let started = 0;
+    return {
+        onWait() {
+            if (!started) started = Date.now();
+            progress(lastPhase || 'preflight', { waiting: true, waitReason: reason, waitSeconds: (Date.now() - started) / 1000 });
+        },
+        onAcquired() {
+            if (!started) return;
+            const seconds = (Date.now() - started) / 1000;
+            waitTimings.push({ stage: lastPhase, reason, seconds }); started = 0;
+            progress(lastPhase || 'preflight', { waiting: false, waitReason: null, waitSeconds: 0 }, true);
+        },
+    };
+}
 let lastProgress = 0, lastPhase = '', lastDetail = {};
 const progress = (stage, detail = {}, force = false) => {
+    if (stage !== lastPhase) {
+        const now = Date.now(), previous = stageTimings.at(-1);
+        if (previous) { previous.endedAt = new Date(now).toISOString(); previous.seconds = (now - Date.parse(previous.startedAt)) / 1000; }
+        stageTimings.push({ stage, startedAt: new Date(now).toISOString() });
+        log('STAGE', stage);
+    }
     lastDetail = stage === lastPhase ? { ...lastDetail, ...detail } : detail;
     lastPhase = stage;
     if (!force && Date.now() - lastProgress < 500) return;
     lastProgress = Date.now();
-    if (process.send && process.connected) process.send({ type: 'progress', stage, ...lastDetail });
+    if (process.send && process.connected) process.send({ type: 'progress', stage, ...lastDetail, stability: verificationPolicy.report() });
 };
 governor.onDecision = decision => {
     if (lastPhase) progress(lastPhase, { pressure: decision.reason }, decision.action === 'pause');
 };
 governor.onMemoryPause = detail => {
+    if (verificationPolicy.memoryPause(lastPhase, detail)) {
+        const decision = verificationPolicy.report();
+        log('STABILITY', decision.upgraded ? 'auto-full' : decision.effectiveMode, lastPhase, detail.reason);
+        if (lastPhase) progress(lastPhase, {}, true);
+    }
     if (process.send && process.connected) process.send({ type: 'memory-pause', ...detail });
 };
 governor.onMemoryResumeResult = detail => {
@@ -138,10 +186,14 @@ function lowPriority(process) {
     try { os.setPriority(process.pid, os.constants.priority.PRIORITY_BELOW_NORMAL); } catch (_) {}
     return process;
 }
-async function ff(args) {
+async function ff(args, { threads = 1, phase = 'ffmpeg' } = {}) {
+    if (![1, 2, 4].includes(threads)) throw new Error('Unsupported FFmpeg thread budget');
     for (;;) {
-        await governor.checkpoint('ffmpeg', true);
-        const process = lowPriority(cp.spawn(ffmpeg, ['-hide_banner', '-loglevel', 'error', '-nostdin', '-threads', '1', '-filter_threads', '1', ...args],
+        // Stream-copy/AAC/checking must not hold the large PCM allocation lease
+        // for their entire duration. Each remains bounded and memory-monitored.
+        await governor.allocation(128 * 1024 ** 2, phase);
+        const started = Date.now(); log('FFMPEG START', phase, 'threads', threads);
+        const process = lowPriority(cp.spawn(ffmpeg, ['-hide_banner', '-loglevel', 'error', '-nostdin', '-threads', String(threads), '-filter_threads', '1', ...args],
             { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] }));
         governor.children.add(process.pid);
         let error = '';
@@ -169,13 +221,15 @@ async function ff(args) {
         try { [code] = await once(process, 'close'); }
         finally { clearInterval(monitor); await checkPromise; governor.children.delete(process.pid); }
         if (monitorFailure?.action === 'pause') {
-            await governor.pauseForMemory('ffmpeg', monitorFailure.reason);
+            await governor.pauseForMemory(phase, monitorFailure.reason);
             continue;
         }
         if (monitorFailure?.action === 'abort') throw monitorFailure.error || new Error(
             monitorFailure.reason === 'disk-space' ? '导出磁盘剩余空间不足 512 MiB，已停止写入。'
                 : `FFmpeg stopped by safety governor: ${monitorFailure.reason}`);
-        if (code) throw new Error(`FFmpeg exited ${code}: ${error}`);
+        if (governor.cancelled) throw new Error('Export cancelled');
+        if (code !== 0) throw new Error(`FFmpeg exited ${code}: ${error}`);
+        log('FFMPEG END', phase, ((Date.now() - started) / 1000).toFixed(3), 'seconds');
         return;
     }
 }
@@ -194,10 +248,11 @@ async function prepareMovies(resources) {
             '-show_entries', 'frame=best_effort_timestamp_time', '-of', 'json', file], { encoding: 'utf8', windowsHide: true, timeout: 30000, maxBuffer: 8 * 1024 * 1024 }));
         const timestamps = frameInfo.frames.map(f => Number(f.best_effort_timestamp_time));
         if (!timestamps.length || timestamps.some((t, i) => !Number.isFinite(t) || t < 0 || (i && t < timestamps[i - 1]))) throw new Error('Invalid movie timestamps');
-        const key = (await hashFile(file)).slice(0, 16);
+        const sourceHash = await hashFile(file), key = sourceHash.slice(0, 16);
         const dir = path.join(output, 'movie-frames', key);
         fs.mkdirSync(dir, { recursive: true });
         const marker = path.join(dir, 'complete.json');
+        if (decodedCache && !fs.existsSync(marker)) await decodedCache.restore('movie', sourceHash, dir);
         let completed;
         try { completed = JSON.parse(fs.readFileSync(marker, 'utf8')); } catch (_) {}
         if (completed?.frames !== timestamps.length || completed?.sourceSha256 !== key) {
@@ -215,6 +270,8 @@ async function prepareMovies(resources) {
         // Check cached frame integrity too, before any output frame is encoded.
         await ff(['-xerror', '-threads', '1', '-framerate', '30', '-start_number', '0', '-i', path.join(dir, '%06d.png'),
             '-frames:v', String(timestamps.length), '-f', 'null', '-']);
+        if (decodedCache) await decodedCache.publish('movie', sourceHash,
+            Object.fromEntries(fs.readdirSync(dir).map(name => [name, path.join(dir, name)])));
         movies[url] = { key, timestamps, duration: Number(probe.format.duration), width: video.width, height: video.height,
             hasAudio: probe.streams.some(s => s.codec_type === 'audio'), source: file };
     }
@@ -272,8 +329,10 @@ async function mixAudio(report, metadata, totalFrames, bus = 'pixi') {
     } finally { sounds.forEach(s => fs.closeSync(s.fd)); }
 }
 async function masterAudio(page, frames, parameters) {
+    return withAllocation(audioMemoryBytes(frames), 'audio-mastering', () => masterAudioExclusive(page, frames, parameters));
+}
+async function masterAudioExclusive(page, frames, parameters) {
     progress('audio', { audioPart: '连续压缩器处理', completed: null, total: null }, true);
-    await governor.allocation(audioMemoryBytes(frames), 'audio-mastering');
     const result = await page.evaluate(({ frames, parameters }) => audioMaster.render(frames, parameters), { frames, parameters });
     const destination = path.join(output, 'mastered.f32');
     const fd = fs.openSync(destination, 'w');
@@ -313,7 +372,7 @@ async function masterAudio(page, frames, parameters) {
         }
     };
     try {
-        unlock = acquireLock(path.join(root, 'exports', '.offline-export.lock'));
+        unlock = acquireWorker(root);
         process.on('SIGINT', cancel); process.on('SIGTERM', cancel);
         process.on('message', control); process.on('disconnect', cancel);
         progress('preflight', {}, true);
@@ -330,7 +389,8 @@ async function masterAudio(page, frames, parameters) {
             .matchAll(/<script src="([^\"]+)"/g)].map(m => m[1]).filter(src => !src.endsWith('/RuntimeDiagnostics.js'));
         for (const src of [...scripts, './fonts/FOT-HummingPro-B.OTF', './fonts/FZFWQINGYINTIJWB.TTF',
             './experiments/offline-export/clock.js', './experiments/offline-export/flow.js',
-            './experiments/offline-export/movies.js', './experiments/offline-export/page.js', './experiments/offline-export/audio-master.js']) {
+            './experiments/offline-export/movies.js', './experiments/offline-export/page.js',
+            './experiments/offline-export/frame-pipeline.js', './experiments/offline-export/audio-master.js']) {
             await preflight.stage(src, 'runtime-file', async () => {
                 const file = checked(root, src);
                 if (!fs.existsSync(file) || !fs.statSync(file).isFile() || !fs.statSync(file).size) throw new Error('启动必需文件缺失或为空');
@@ -343,7 +403,8 @@ async function masterAudio(page, frames, parameters) {
             + '<script src="/experiments/offline-export/clock.js"></script>'
             + scripts.map(src => `<script src="${src}"></script>`).join('')
             + '<script src="/experiments/offline-export/flow.js"></script><script src="/experiments/offline-export/movies.js"></script>'
-            + '<script src="/experiments/offline-export/page.js"></script></head><body></body></html>';
+            + '<script src="/experiments/offline-export/page.js"></script>'
+            + '<script src="/experiments/offline-export/frame-pipeline.js"></script></head><body></body></html>';
         server = http.createServer((req, res) => {
             try {
                 const requestUrl = new URL(req.url, 'http://localhost');
@@ -449,6 +510,11 @@ async function masterAudio(page, frames, parameters) {
             if (prepared) Object.assign(movieMetadata, prepared);
         }
         json('movie-metadata.json', movieMetadata);
+        // Report an unavailable shared decoder once, not as dozens of missing
+        // resources. Its output rate is independent of the system audio device.
+        const decoder = await preflight.stage('浏览器音频解码器', 'audio-context', () => page.evaluate(() => proof.initAudioDecoder()));
+        if (!decoder) { json('preflight-report.json', preflight.report()); preflight.assert(); }
+        json('audio-decoder.json', decoder);
         const audioMetadata = {};
         for (const [, url] of resources.filter(([, url]) => url.endsWith('.m4a') || movieMetadata[url]?.hasAudio)) {
             if (audioMetadata[url]) continue;
@@ -458,22 +524,24 @@ async function masterAudio(page, frames, parameters) {
             const pcm = path.join(output, 'audio', sha(Buffer.from(url)).slice(0, 16) + '.browser.f32');
             const completion = pcm + '.json';
             fs.mkdirSync(path.dirname(pcm), { recursive: true });
+            if (decodedCache && !fs.existsSync(completion)) await decodedCache.restore('pcm', sourceHash,
+                { 'audio.f32': pcm, 'audio.json': completion });
             let cached;
             try { cached = JSON.parse(fs.readFileSync(completion, 'utf8')); } catch (_) {}
-            if (!cached || !Number.isSafeInteger(cached.samples) || cached.samples <= 0 || cached.sourceHash !== sourceHash
-                || !fs.existsSync(pcm) || fs.statSync(pcm).size !== cached.samples * 8) {
+            if (!validAudioCache(cached, sourceHash, fs.existsSync(pcm) ? fs.statSync(pcm).size : 0)) {
                 const probe = JSON.parse(cp.execFileSync(ffprobe, ['-v', 'error', '-show_entries', 'format=duration:stream=codec_type,channels',
                     '-of', 'json', localAsset(resourcePath(url))], { encoding: 'utf8', windowsHide: true, timeout: 15000 }));
                 const audio = probe.streams.find(s => s.codec_type === 'audio');
                 const seconds = Number(probe.format.duration);
                 if (!audio || !Number.isFinite(seconds) || seconds <= 0 || seconds * 48000 * 8 > 256 * 1024 * 1024)
                     throw new Error('Audio missing, invalid or too long');
-                await governor.allocation(seconds * 48000 * Math.max(2, audio.channels) * 4 * 3 + 32 * 1024 * 1024, 'audio-decode');
+                await withAllocation(seconds * 48000 * Math.max(2, audio.channels) * 4 * 3 + 32 * 1024 * 1024, 'audio-decode', async () => {
                 let metadata;
                 const partial = pcm + '.partial';
                 const fd = fs.openSync(partial, 'w');
                 try {
                     metadata = await page.evaluate(url => proof.decodeAudio(url), url);
+                    validateDecodedAudio(metadata);
                     if (metadata.samples * 8 > 256 * 1024 * 1024) throw new Error('Audio too large for this proof decoder');
                     for (let start = 0; start < metadata.samples; start += 48000) {
                         await governor.checkpoint('audio-decode');
@@ -483,14 +551,17 @@ async function masterAudio(page, frames, parameters) {
                 } finally { fs.closeSync(fd); await page.evaluate(() => { proof.decodedAudio = null; }); }
                 if (fs.statSync(partial).size !== metadata.samples * 8) throw new Error('Incomplete decoded PCM');
                 fs.renameSync(partial, pcm);
-                fs.writeFileSync(completion, JSON.stringify({ sourceHash, samples: metadata.samples }));
+                fs.writeFileSync(completion, JSON.stringify({ ...AUDIO_PCM_FORMAT, sourceHash, samples: metadata.samples }));
                 log('Browser decoded', url, metadata.duration);
+                });
             }
             const samples = fs.statSync(pcm).size / 8;
-            audioMetadata[url] = { duration: samples / 48000, samples, pcm };
+            if (decodedCache) await decodedCache.publish('pcm', sourceHash, { 'audio.f32': pcm, 'audio.json': completion });
+            audioMetadata[url] = { duration: samples / AUDIO_PCM_FORMAT.sampleRate, samples, pcm, ...AUDIO_PCM_FORMAT };
             });
         }
         json('audio-metadata.json', audioMetadata);
+        if (decodedCache) json('decoded-cache-report.json', decodedCache.stats);
         await preflight.stage('H.264 1080p60', 'encoder-support', () => page.evaluate(() => proof.checkEncoder()));
         preflight.finished = true;
         json('preflight-report.json', preflight.report()); preflight.assert();
@@ -498,9 +569,10 @@ async function masterAudio(page, frames, parameters) {
         if (mode === 'prepare' || mode === 'preflight') { log('PREPARED', output); return; }
         const heap = await page.context().newCDPSession(page);
         try { await heap.send('HeapProfiler.collectGarbage'); } finally { await heap.detach(); }
-        await governor.allocation(textureBytes + 256 * 1024 * 1024, 'renderer-preparation');
+        const prepareRenderer = () => withAllocation(textureBytes + 256 * 1024 * 1024, 'renderer-preparation',
+            () => page.evaluate(({ audioMetadata, movieMetadata }) => proof.prepare(audioMetadata, movieMetadata), { audioMetadata, movieMetadata }));
         if (mode === 'verify-branches') {
-            await page.evaluate(({ audioMetadata, movieMetadata }) => proof.prepare(audioMetadata, movieMetadata), { audioMetadata, movieMetadata });
+            await prepareRenderer();
             await page.evaluate(() => proof.start());
             for (let frame = 0; frame < 60 * maxSeconds; frame++) {
                 const tick = Date.now(); await governor.checkpoint('branch-verification');
@@ -522,7 +594,7 @@ async function masterAudio(page, frames, parameters) {
             log('ALL THREE BRANCHES VERIFIED, no full video generated');
         }
         if (mode === 'all' || mode === 'offline' || mode === 'branch-preview') {
-            const renderer = await page.evaluate(({ audioMetadata, movieMetadata }) => proof.prepare(audioMetadata, movieMetadata), { audioMetadata, movieMetadata });
+            const renderer = await prepareRenderer();
             log('Renderer ready', renderer);
             const gpu = await session.send('SystemInfo.getInfo');
             json('renderer-info.json', { renderer, gpu: gpu.gpu, headless: true });
@@ -553,7 +625,8 @@ async function masterAudio(page, frames, parameters) {
                     await governor.pacePreroll(begin, result.steps);
                 }
             }
-            for (let frame = firstFrame; frame < 60 * maxSeconds; frame++) {
+            let batchCalls = 0;
+            for (let frame = firstFrame; frame < 60 * maxSeconds;) {
                 const checkpointStart = performance.now();
                 await governor.checkpoint('render');
                 frameTiming.checkpointMs += performance.now() - checkpointStart;
@@ -565,35 +638,38 @@ async function masterAudio(page, frames, parameters) {
                 // Measurement/pressure waits already yield the CPU. Do not
                 // charge them a second time as GPU rendering duty.
                 const begin = Date.now();
-                const capture = runProfile.sampleFrame(frame);
                 const renderStart = performance.now();
-                const result = await page.evaluate(async ({ frame, capture, count, prepared }) => {
-                    const state = prepared || await proof.step(frame, capture);
-                    if (prepared && capture) state.png = proof.app.view.toDataURL('image/png').split(',')[1];
-                    if (!state.done && state.captureStartFrame != null) state.packet = await proof.encodeFrame(count);
-                    return state;
-                }, { frame, capture, count, prepared });
+                const size = options.framePipeline && governor.current.reason === 'normal' ? 8 : 1;
+                let end = Math.min(frame + size, 60 * maxSeconds);
+                if (runProfile.stallFrame > frame) end = Math.min(end, runProfile.stallFrame);
+                const captures = Array.from({ length: end - frame }, (_, i) => frame + i).filter(runProfile.sampleFrame);
+                const results = await page.evaluate(args => proof.renderBatch(args), { frame, count, prepared, end, captures });
+                batchCalls++;
                 frameTiming.renderEncodeMs += performance.now() - renderStart;
                 prepared = null;
                 const transportStart = performance.now();
-                if (result.packet) {
-                    if (result.packet.timestamp !== Math.round(count * 1000000 / 60)) throw new Error('Encoded timestamp mismatch');
-                    await writeStream(elementary, Buffer.from(result.packet.data, 'base64'));
-                    count++;
+                for (const result of results) {
+                    if (result.packet) {
+                        if (result.packet.timestamp !== Math.round(count * 1000000 / 60)) throw new Error('Encoded timestamp mismatch');
+                        await writeStream(elementary, Buffer.from(result.packet.data, 'base64'));
+                        count++;
+                    }
+                    if (result.png && result.packet) {
+                        const bytes = Buffer.from(result.png, 'base64');
+                        hashes[result.frame] = sha(bytes);
+                        fs.writeFileSync(path.join(output, `frame-${String(result.frame).padStart(4, '0')}.png`), bytes);
+                    }
                 }
-                if (capture && result.packet) {
-                    const bytes = Buffer.from(result.png, 'base64');
-                    hashes[frame] = sha(bytes);
-                    fs.writeFileSync(path.join(output, `frame-${String(frame).padStart(4, '0')}.png`), bytes);
-                }
+                const result = results.at(-1);
                 frameTiming.transportMs += performance.now() - transportStart;
-                if (frame % 300 === 0) log('Rendered', frame, 'video seconds', frame / 60,
+                if (Math.floor(frame / 300) !== Math.floor((result.frame + 1) / 300)) log('Rendered', result.frame, 'video seconds', result.frame / 60,
                     'wall seconds', ((performance.now() - started) / 1000).toFixed(1));
                 progress('render', { encodedFrames: count, videoSeconds: count / 60,
                     storyCompleted: result.storyCompleted, storyTotal: result.storyTotal,
                     pressure: governor.current.reason });
                 if (result.done) break;
-                // Bounded queue (one frame) and a configurable conservative wall-clock cap.
+                frame = result.frame + 1;
+                // Low-load/pressure uses a one-frame batch and the existing cap.
                 const pacingStart = performance.now();
                 await governor.pace(begin);
                 frameTiming.pacingMs += performance.now() - pacingStart;
@@ -603,9 +679,12 @@ async function masterAudio(page, frames, parameters) {
             report.wallSeconds = (performance.now() - started) / 1000;
             report.frameTiming = frameTiming;
             report.encodedFrames = count;
-            report.frameTransport = 'WebCodecs H.264 Annex B, one acknowledged frame, no desktop capture';
+            report.frameTransport = 'WebCodecs H.264 Annex B, bounded acknowledged frames, no desktop capture';
+            report.pipeline = { enabled: options.framePipeline, calls: batchCalls, maxBatch: options.framePipeline ? 8 : 1,
+                highWater: await page.evaluate(() => proof.pipelineHighWater || 1) };
             report.encoder = codec;
             report.wallFpsCap = wallFps;
+            report.speedMode = policy.speedMode;
             report.diagnostics = runProfile.diagnostics;
             const encodedCount = await page.evaluate(() => proof.finishEncoder());
             if (encodedCount !== count) throw new Error('Encoder frame count mismatch');
@@ -618,7 +697,7 @@ async function masterAudio(page, frames, parameters) {
             const parameters = await closeVisualBrowser();
             progress('audio', {}, true);
             await ff(['-r', '60', '-f', 'h264', '-i', path.join(output, 'picture.h264'),
-                '-an', '-c:v', 'copy', '-video_track_timescale', '60000', '-y', videoPath]);
+                '-an', '-c:v', 'copy', '-video_track_timescale', '60000', '-y', videoPath], { phase: 'video-remux' });
             await mixAudio(report, audioMetadata, count);
             await mixAudio(report, audioMetadata, count, 'media');
             await openBrowserPage('/audio-proof');
@@ -628,9 +707,19 @@ async function masterAudio(page, frames, parameters) {
             const partialVideo = path.join(output, `${eventId}.offline.partial.mp4`);
             await ff(['-i', videoPath, '-f', 'f32le', '-ar', '48000', '-ac', '2', '-i', mastered,
                 '-map', '0:v', '-map', '1:a', '-c:v', 'copy', '-c:a', 'aac', '-b:a', '256k',
-                '-movflags', '+faststart', '-shortest', '-y', partialVideo]);
-            progress('verify', { outputPath: finalVideo, encodedFrames: count }, true);
-            await ff(['-xerror', '-i', partialVideo, '-f', 'null', '-']);
+                '-movflags', '+faststart', '-shortest', '-y', partialVideo], { phase: 'audio-encode-mux' });
+            const decision = verificationPolicy.report(), verificationMode = decision.effectiveMode;
+            progress('verify', { outputPath: finalVideo, encodedFrames: count, verificationMode }, true);
+            const verification = await quickVerify(partialVideo, count, { ffprobe, governor,
+                onProgress: verifyPart => progress('verify', { verifyPart }, true) });
+            Object.assign(verification, decision, { mode: verificationMode });
+            if (verificationMode === 'full') {
+                const started = Date.now(), threads = policy.speedMode === 'high-speed' && os.cpus().length >= 4 ? 4 : 2;
+                progress('verify', { verifyPart: `完整解码检查（${threads} 线程）` }, true);
+                await ff(['-xerror', '-i', partialVideo, '-map', '0:v:0', '-map', '0:a:0', '-f', 'null', '-'], { threads, phase: 'verify-full' });
+                verification.fullDecode = { passed: true, threads, seconds: (Date.now() - started) / 1000 };
+            }
+            json('verification-report.json', verification);
             fs.renameSync(partialVideo, finalVideo);
             log('OFFLINE SAMPLE COMPLETE', count, 'frames', report.wallSeconds.toFixed(1), 'seconds wall time');
         }
@@ -650,7 +739,7 @@ async function masterAudio(page, frames, parameters) {
         if (mode === 'all' || mode === 'reference') {
             await page.goto(base + '/proof?clock=realtime');
             await page.evaluate(({ raw, options }) => proof.describe(raw, options), { raw, options });
-            await page.evaluate(({ audioMetadata, movieMetadata }) => proof.prepare(audioMetadata, movieMetadata), { audioMetadata, movieMetadata });
+            await prepareRenderer();
             await page.evaluate(() => proof.start());
             for (let i = 0; i < maxSeconds; i++) {
                 await new Promise(r => setTimeout(r, 1000));
@@ -667,7 +756,7 @@ async function masterAudio(page, frames, parameters) {
             if (!Object.keys(previous.hashes || {}).length) throw new Error('No diagnostic frames: rerun with mode all or SSV_PROOF_DIAGNOSTICS=1');
             await page.goto(base + '/proof?clock=offline');
             await page.evaluate(({ raw, options }) => proof.describe(raw, options), { raw, options });
-            await page.evaluate(({ audioMetadata, movieMetadata }) => proof.prepare(audioMetadata, movieMetadata), { audioMetadata, movieMetadata });
+            await prepareRenderer();
             await page.evaluate(() => proof.start());
             const comparisons = [];
             for (let frame = 0; frame <= previous.frame; frame++) {
@@ -704,6 +793,7 @@ async function masterAudio(page, frames, parameters) {
         if (encoder) encoder.kill();
         try { if (browser) await browser.close(); }
         finally {
+            await governor.close();
             if (server) server.close();
             process.off('SIGINT', cancel); process.off('SIGTERM', cancel);
             process.off('message', control); process.off('disconnect', cancel);
@@ -716,7 +806,17 @@ async function masterAudio(page, frames, parameters) {
                         log('Cleanup warning; outputs preserved', error.message);
                     }
                 }
-            } finally { if (unlock) unlock(); }
+            } finally {
+                if (unlock) {
+                    const previous = stageTimings.at(-1), now = Date.now();
+                    if (previous && previous.seconds == null) { previous.endedAt = new Date(now).toISOString(); previous.seconds = (now - Date.parse(previous.startedAt)) / 1000; }
+                    try {
+                        json('stage-timings.json', { stages: stageTimings, waits: waitTimings });
+                        json('stability-report.json', verificationPolicy.report());
+                    }
+                    finally { unlock(); }
+                }
+            }
         }
     }
 })().catch(error => { console.error(error); process.exitCode = 1; });

@@ -6,6 +6,47 @@ const os = require('node:os');
 const path = require('node:path');
 const { limits, decide, frameRest, acquireLock, Governor } = require('../experiments/offline-export/governor.cjs');
 const policy = limits({}, 16 * 1024 ** 3);
+test('high speed removes fixed wall pacing only, with explicit opt-in', () => {
+    const fast = limits({ SSV_PROOF_SPEED_MODE: 'high-speed' }, 32 * 1024 ** 3);
+    const sample = { privateMiB: 1000, freeMiB: 16000, cpuPercent: 10 };
+    assert.equal(fast.speedMode, 'high-speed'); assert.equal(fast.fps, null);
+    assert.equal(fast.memoryMiB, policy.memoryMiB); assert.equal(fast.sampleMs, policy.sampleMs);
+    assert.equal(limits({}).speedMode, 'low-load');
+    const oldDecision = decide(sample, policy), newDecision = decide(sample, fast);
+    assert.equal(oldDecision.duty, .65); assert.equal(newDecision.duty, 1);
+    for (const work of [0, 0.1, 1, 10, 36, 100, 1000]) assert.equal(frameRest(work, newDecision), 0);
+    assert(frameRest(36, oldDecision) > 19);
+    assert.equal(limits({SSV_PROOF_SPEED_MODE:'high-speed', SSV_PROOF_WALL_FPS:'60'}).fps, null,
+        'an already-running queue service must not reapply its legacy 60 FPS cap');
+    for (const env of [{ SSV_PROOF_SPEED_MODE: 'turbo' }, { SSV_PROOF_SPEED_MODE: null }]) assert.throws(() => limits(env));
+});
+test('high speed retains every CPU, memory, disk and allocation safety decision', async () => {
+    const slow = limits({}, 32 * 1024 ** 3), fast = limits({ SSV_PROOF_SPEED_MODE: 'high-speed' }, 32 * 1024 ** 3);
+    const normal = { privateMiB: 1000, freeMiB: 16000, cpuPercent: 10, diskFreeMiB: 10000 };
+    for (const pressure of [{ cpuPercent: 70 }, { cpuPercent: 85 }, { privateMiB: 2800 },
+        { privateMiB: 3072 }, { freeMiB: slow.reserveMiB - 1 }, { freeMiB: slow.reserveMiB + 100 },
+        { freeMiB: slow.reserveMiB + 400 }, { diskFreeMiB: 511 }])
+        assert.deepEqual(decide({ ...normal, ...pressure }, fast), decide({ ...normal, ...pressure }, slow));
+    const g = new Governor(fast); let checkpoint = false;
+    g.checkpoint = async () => { checkpoint = true; g.samples.push({ privateMiB: 2800, freeMiB: 16000 }); };
+    g.pauseForMemory = async (phase, reason) => { assert.equal(phase, 'test'); assert.equal(reason, 'allocation-budget'); };
+    await g.allocation(512 * 1024 ** 2, 'test'); assert(checkpoint);
+    g.updateMemoryPolicy({ memoryMiB: 4096, reserveMiB: 2048 });
+    assert.equal(g.policy.speedMode, 'high-speed'); assert.equal(g.policy.fps, null);
+});
+test('unrestricted normal pacing creates no timer; pressure pacing still sleeps', async t => {
+    const timers = [];
+    t.mock.method(globalThis, 'setTimeout', (callback, milliseconds) => { timers.push(milliseconds); callback(); return 0; });
+    const fast = limits({ SSV_PROOF_SPEED_MODE: 'high-speed' });
+    const g = new Governor(fast), sample = { privateMiB: 1000, freeMiB: 16000, cpuPercent: 10 };
+    g.current = decide(sample, fast);
+    for (let i = 0; i < 1000; i++) await g.pace(Date.now());
+    assert.equal(timers.length, 0);
+    g.current = decide({...sample,cpuPercent:85}, fast);
+    await g.pace(Date.now()); assert.equal(timers.length, 1); assert(timers[0] > 100);
+    g.current = decide(sample, fast);
+    await g.pace(Date.now()); assert.equal(timers.length, 1, 'normal mode recovers without leftover waits');
+});
 test('conservative defaults and invalid settings', () => {
     assert.equal(policy.fps, 18); assert.equal(policy.memoryMiB, 3072);
     for (const env of [{ SSV_PROOF_WALL_FPS: 100 }, { SSV_PROOF_MEMORY_MIB: 'NaN' }, { SSV_PROOF_RESERVE_MIB: -1 }])

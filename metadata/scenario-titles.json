@@ -53574,6 +53574,54 @@
       "cardName": "【Master ShowPiece】風野灯織",
       "cardId": "2040020270",
       "source": "shinycolors.moe"
+    },
+    "produce_events/302002201": {
+      "eventType": "produce_events",
+      "eventId": "302002201",
+      "storyTitle": "とおる１",
+      "cardName": "【アメと風と】浅倉透",
+      "cardId": "2040200170",
+      "source": "shinycolors.moe"
+    },
+    "produce_events/302002202": {
+      "eventType": "produce_events",
+      "eventId": "302002202",
+      "storyTitle": "とおる２",
+      "cardName": "【アメと風と】浅倉透",
+      "cardId": "2040200170",
+      "source": "shinycolors.moe"
+    },
+    "produce_events/302801301": {
+      "eventType": "produce_events",
+      "eventId": "302801301",
+      "storyTitle": "任せてください",
+      "cardName": "【探偵は二面相】郁田はるき",
+      "cardId": "2040280090",
+      "source": "shinycolors.moe"
+    },
+    "produce_events/302801302": {
+      "eventType": "produce_events",
+      "eventId": "302801302",
+      "storyTitle": "報酬はあなたの笑顔",
+      "cardName": "【探偵は二面相】郁田はるき",
+      "cardId": "2040280090",
+      "source": "shinycolors.moe"
+    },
+    "produce_events/301302901": {
+      "eventType": "produce_events",
+      "eventId": "301302901",
+      "storyTitle": "どう見ているか",
+      "cardName": "【誰か越しのあなた】有栖川夏葉",
+      "cardId": "2030130130",
+      "source": "shinycolors.moe"
+    },
+    "produce_events/301302902": {
+      "eventType": "produce_events",
+      "eventId": "301302902",
+      "storyTitle": "どう見えているか",
+      "cardName": "【誰か越しのあなた】有栖川夏葉",
+      "cardId": "2030130130",
+      "source": "shinycolors.moe"
     }
   }
 }
