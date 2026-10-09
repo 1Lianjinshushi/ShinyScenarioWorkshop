@@ -1,4 +1,4 @@
-"""Refresh the r17 operation pages and append the release maintenance log.
+"""Refresh the r18 operation pages and append the release maintenance log.
 
 Keep the original maintenance pages 5-8; replace the four operation pages and
 the release appendix so old layout screenshots do not mislead new users.
@@ -20,8 +20,8 @@ from reportlab.pdfgen import canvas
 
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT = ROOT / "output" / "pdf" / "ShinyScenarioWorkshop-Quick-Guide.pdf"
-APPENDIX = ROOT / "tmp" / "pdfs" / "quick-guide-r17-appendix.pdf"
-TEMP_OUTPUT = ROOT / "tmp" / "pdfs" / "quick-guide-r17-combined.pdf"
+APPENDIX = ROOT / "tmp" / "pdfs" / "quick-guide-r18-appendix.pdf"
+TEMP_OUTPUT = ROOT / "tmp" / "pdfs" / "quick-guide-r18-combined.pdf"
 BASE_PAGE_COUNT = 8
 
 FONT_BODY_PATH = ROOT / "fonts" / "FZFWQINGYINTIJWB.TTF"
@@ -134,7 +134,7 @@ def build_appendix() -> None:
     page.drawString(58, y - 21, "分享版仍不内置 FFmpeg／FFprobe，但包含 Node.js、Playwright、字体、通用 UI 与日志头像。")
     page.drawString(58, y - 39, "后台直出的完整配置步骤请查看 Offline-Export-Guide-ZH.pdf。")
     page.showPage()
-    y = header(page, 11, "20261009-r17 更新", "四个操作入口、双线高速直出与自动成片检查")
+    y = header(page, 11, "20261009-r17 / r18 更新", "四个操作入口、双线高速直出与自动成片检查")
     y = section(page, y, "操作界面分层", "布局", [
         "剧情资源库、翻译工作台、后台直出、维护与帮助分开显示；资源库另分更新日志和完整目录。",
         "切换入口保留剧情、CSV、目录展开及任务状态。运行／暂停任务置顶，待导出列表单独显示。",
@@ -146,10 +146,14 @@ def build_appendix() -> None:
         "修复一篇封装／检查长期占用共享分配锁、让另一篇音频处理一直等待的问题。",
         "音频固定以独立 48 kHz 上下文解码，不受系统播放设备采样率影响。",
     ])
-    section(page, y, "自动检查与完整分享", "交付", [
+    y = section(page, y, "自动检查与完整分享", "交付", [
         "正常任务快速检查；生成／混音／封装中内存暂停才升级完整解码。保留仅快速与始终完整。",
         "不降低成片分辨率、帧率，不改变剧情节奏；检查不能替代人工演出与音画同步验收。",
         "两份 PDF 与分享说明同步新版入口；通用资源、字体、Node.js、Playwright 随包，FFmpeg／FFprobe 自行配置。",
+    ])
+    section(page, y, "20261009-r18：资源库常用入口", "2026-10-09", [
+        "将“打开页游并检查”和“补全全库名称”移回剧情资源库顶部，扫描与补全结果也在同处显示。",
+        "维护与帮助保留监听脚本安装、环境配置与教程；只调整入口，不修改资源匹配或直出逻辑。",
     ])
     page.save()
 
@@ -162,17 +166,17 @@ def combine() -> None:
     writer = PdfWriter()
     corrections = BytesIO()
     overlay = canvas.Canvas(corrections, pagesize=A4)
-    y = header(overlay, 1, "闪耀色彩剧情工坊 · 快速开始", "完整分享版 20261009-r17  /  Windows 10、11")
+    y = header(overlay, 1, "闪耀色彩剧情工坊 · 快速开始", "完整分享版 20261009-r18  /  Windows 10、11")
     y = section(overlay, y, "从解压到打开", "首次使用", [
         "从 GitHub Releases 下载 Portable ZIP 和校验文件，不要下载自动生成的 Source code 压缩包。",
         "完整解压到可写目录，再双击 start-viewer.cmd；不要在 ZIP 预览里直接运行。",
         "浏览器打开 http://127.0.0.1:8000/app.html。启动后的服务窗口需保持运行。",
     ])
     y = section(overlay, y, "四个入口，各做一件事", "左侧导航", [
-        "剧情资源库：更新日志、完整目录、整组 CSV、卡图与动态资源入口。",
+        "剧情资源库：打开页游检查、补全名称、更新日志、完整目录、整组 CSV 与卡图入口。",
         "翻译工作台：输入剧情编号、导入 CSV、补发言人译名、编辑和播放。",
         "后台直出：待导出列表、运行进度、速度／双线／检查方式及保存目录。",
-        "维护与帮助：监听脚本、名称补全、资源维护和 PDF 教程。",
+        "维护与帮助：监听脚本安装、环境配置和 PDF 教程。",
         "切换入口不会清空当前剧情或 CSV；首次进入翻译工作台，之后记住上次位置。",
     ])
     section(overlay, y, "包内有什么", "依赖边界", [
@@ -191,7 +195,7 @@ def combine() -> None:
         "载入后可播放日文原版、保存 CSV 并播放汉化版，或进入编辑模式边看画面边修订。",
         "编辑中的自动保存副本位于 translations；请另外保存重要定稿，并核对导出的 CSV。",
         "未实装卡图可在编辑模式跳过；正式播放与后台直出仍校验必要资源，不生成缺资源成片。",
-        "资源缺口和修复工具放在维护与帮助；卡图／动态卡图可使用对应的手动载入入口。",
+        "载入后可展开资源状态查看缺口与修复工具；卡图／动态卡图可使用对应的手动载入入口。",
     ])
     section(overlay, y, "批量 CSV 与直出联动", "不会自动开工", [
         "批量导入 CSV 后，成功合成的汉化快照会加入待导出列表；原有待导出项保留。",
@@ -202,10 +206,11 @@ def combine() -> None:
     y = header(overlay, 3, "剧情资源库与页游监听", "完整分享版包含监听脚本；安装需浏览器用户脚本管理器")
     y = section(overlay, y, "首次启用", "自己的浏览器与账号", [
         "先安装并启用 Tampermonkey 或 Violentmonkey。Chrome 如有“允许用户脚本”选项，请一并打开。",
-        "在维护与帮助点击“安装／更新监听脚本”，由脚本管理器确认，再点击“打开页游并检查”。",
+        "在维护与帮助点击“安装／更新监听脚本”，由脚本管理器确认，再到剧情资源库点击“打开页游并检查”。",
         "若看到代码文本而非安装页，是脚本管理器未接管；不是下载损坏，也不能直接把代码页当作已安装。",
     ])
     y = section(overlay, y, "名称补全与资源检查", "保持原更新位置", [
+        "“补全全库名称”位于剧情资源库顶部，旁边是页游检查入口；扫描／名称补全结果就地显示。",
         "资源库支持按角色、卡片、活动与育成篇章查看，并可整组下载 CSV。",
         "卡名和逐话标题按实际卡号与剧情 ID 精确对应；“补全库名称”不会把旧剧情重新列成新更新。",
         "静态卡图与动态卡图单独展示。动态 MP4 可手动下载、导入；卡片资源实装后更新原位置状态。",

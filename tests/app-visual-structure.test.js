@@ -47,6 +47,17 @@ test('workspace CSS and navigation are included in portable builds', () => {
     assert.match(workspaceCss, /@media \(max-width: 800px\)/);
 });
 
+test('game check, name completion and their status belong to the library', () => {
+    const library = html.slice(html.indexOf('<section id="game-update-monitor"'), html.indexOf('<section id="maintenance"'));
+    const maintenance = html.slice(html.indexOf('<section id="maintenance"'));
+    assert.match(library, /href="https:\/\/shinycolors\.enza\.fun\/"/);
+    assert.match(library, /id="game-update-rebuild-labels"/);
+    assert.match(library, /id="game-update-note"/);
+    assert.ok(library.indexOf('id="game-update-rebuild-labels"') < library.indexOf('class="library-toolbar"'));
+    assert.doesNotMatch(maintenance, /id="game-update-rebuild-labels"|id="game-update-note"|href="https:\/\/shinycolors\.enza\.fun\/"/);
+    assert.match(maintenance, /href="\.\/scripts\/ShinyScenarioUpdateMonitor\.user\.js"/);
+});
+
 test('workshop controls retain focus, reduced-motion, and narrow-screen treatments', () => {
     assert.match(css, /:focus-visible/);
     assert.match(css, /\.file-drop:focus-within/);

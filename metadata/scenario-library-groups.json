@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generatedAt": "2026-10-08T08:55:53+00:00",
+  "generatedAt": "2026-10-09T02:24:25+00:00",
   "cards": {
     "3004027": {
       "cardName": "【食堂のリトルアイドル】",
@@ -11333,7 +11333,7 @@
       "cardType": "Support",
       "cardId": "2040200170",
       "label": "透S卡・【アメと風と】",
-      "source": "scenario-event-metadata"
+      "source": "shinycolors.moe/card-event-id"
     },
     "3028013": {
       "cardName": "【探偵は二面相】",
@@ -11343,7 +11343,7 @@
       "cardType": "Support",
       "cardId": "2040280090",
       "label": "阳希S卡・【探偵は二面相】",
-      "source": "scenario-event-metadata"
+      "source": "shinycolors.moe/card-event-id"
     },
     "3013029": {
       "cardName": "【誰か越しのあなた】",
@@ -11353,7 +11353,7 @@
       "cardType": "Support",
       "cardId": "2030130130",
       "label": "夏叶S卡・【誰か越しのあなた】",
-      "source": "scenario-event-metadata"
+      "source": "shinycolors.moe/card-event-id"
     }
   },
   "activities": {

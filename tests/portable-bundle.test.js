@@ -20,8 +20,8 @@ test('portable metadata adapter and clean cache flags ship with the server', () 
     assert.match(builder, /@\('PACKAGE-CONTENTS.txt'\)/);
 });
 
-test('r17 portable builder cannot silently replace r12 or an existing package', () => {
-    assert.match(builder, /\$Version = '20261009-r17'/);
+test('r18 portable builder cannot silently replace r12 or an existing package', () => {
+    assert.match(builder, /\$Version = '20261009-r18'/);
     assert.match(builder, /\$Version -eq '20260907-r12'/);
     assert.match(builder, /Package target already exists/);
     assert.doesNotMatch(builder, /Remove-Item -LiteralPath \$PackageRoot/);

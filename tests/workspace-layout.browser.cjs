@@ -89,6 +89,9 @@ const server = http.createServer(async (req, res) => {
         await page.locator('#speaker-editor input').fill('测试未保存译名');
         await page.screenshot({path:path.join(screenshots,'workbench-desktop.png'),fullPage:true,animations:'disabled'});
         await page.locator('.workspace-nav [data-go-workspace="library"]').click();
+        assert(await page.locator('#game-update-monitor #game-update-rebuild-labels').isVisible());
+        assert(await page.locator('#game-update-monitor a[href="https://shinycolors.enza.fun/"]').isVisible());
+        assert(await page.locator('#game-update-monitor #game-update-note').isVisible());
         await page.locator('#library-tab-all').click();
         const rootTree=page.locator('#library-pane-all .monitor-tree-node').first();
         await rootTree.locator(':scope > summary').click();
@@ -100,6 +103,10 @@ const server = http.createServer(async (req, res) => {
         await page.waitForFunction(()=>!document.getElementById('game-update-refresh').disabled);
         assert(await page.evaluate(()=>window.refs.tree===document.querySelector('#library-pane-all .monitor-tree-node')));
         assert((await page.locator('#library-pane-all').innerText()).includes('育成'));
+        await page.locator('#game-update-rebuild-labels').click();
+        await page.waitForFunction(()=>!document.getElementById('game-update-rebuild-labels').disabled);
+        assert.equal(calls.filter(c=>c.path==='/api/rebuild-scenario-library-labels' && c.method==='POST').length,1);
+        assert((await page.locator('#game-update-monitor #game-update-note').innerText()).includes('资料库名称已补全'));
         await page.screenshot({path:path.join(screenshots,'library-desktop.png'),fullPage:true,animations:'disabled'});
         await page.locator('#library-tab-updates').click();
         for (let depth=0; depth<8 && !(await page.locator('#library-pane-updates .monitor-use:visible').count()); depth++) {
@@ -114,7 +121,8 @@ const server = http.createServer(async (req, res) => {
         assert.equal(await page.locator('#event-id').inputValue(), expected);
         assert(await page.locator('#fetch-scenario').isVisible());
         await page.locator('.workspace-nav [data-go-workspace="maintenance"]').click();
-        assert(await page.locator('#game-update-rebuild-labels').isVisible());
+        assert(!(await page.locator('#game-update-rebuild-labels').isVisible()));
+        assert(await page.locator('#maintenance a[href="./scripts/ShinyScenarioUpdateMonitor.user.js"]').isVisible());
         assert.equal(await page.locator('[data-help-fallback]').first().getAttribute('href'),'./Quick-Guide-ZH.pdf');
         await page.screenshot({path:path.join(screenshots,'maintenance-desktop.png'),fullPage:true,animations:'disabled'});
         await page.locator('.workspace-nav [data-go-workspace="workbench"]').click();

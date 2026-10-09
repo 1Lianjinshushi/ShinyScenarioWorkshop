@@ -80,6 +80,7 @@
 .library-tabs button { background: transparent; border-color: transparent; }
 .library-tabs button[aria-selected="true"] { background: #393041; color: #ffe4f1; }
 .workspace-content .monitor-actions { margin: 0; gap: 8px; }
+.workspace-content .library-actions { margin-bottom: 12px; }
 .workspace-content .library-toolbar .monitor-actions { border: 0; background: none; padding: 0; }
 .workspace-content .monitor-list { margin-top: 0; }
 .workspace-content .monitor-library { margin-top: 0; border-top: 0; padding-top: 0; }

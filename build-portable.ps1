@@ -1,5 +1,5 @@
 param(
-    [string]$Version = '20261009-r17',
+    [string]$Version = '20261009-r18',
     [string]$OutputDirectory = (Join-Path (Split-Path -Parent $PSScriptRoot) 'release'),
     [string]$NodeExecutable = 'C:\Users\Lenovo\AppData\Local\Programs\nodejs-v24.20.0\node.exe',
     [string]$NodeLicense = 'C:\Users\Lenovo\AppData\Local\Programs\nodejs-v24.20.0\LICENSE',

@@ -264,6 +264,11 @@
                 <section id="game-update-monitor" class="panel" data-workspace-view="library" aria-labelledby="game-update-title" hidden>
                     <div class="panel-body">
                         <div class="section-heading"><div><p class="workspace-kicker">SCENARIO LIBRARY</p><h2 id="game-update-title" tabindex="-1">剧情资源库</h2><p>从更新日志查看新内容，或按活动、育成、特殊剧情和角色浏览。</p></div><span id="game-update-badge" class="badge">尚未建立基线</span></div>
+                        <div class="monitor-actions library-actions">
+                            <a class="button-link" href="https://shinycolors.enza.fun/" target="_blank" rel="noreferrer">打开页游并检查</a>
+                            <button id="game-update-rebuild-labels" type="button">补全全库名称</button>
+                        </div>
+                        <p id="game-update-note" class="monitor-note" role="status">安装／更新监听脚本后，只需刷新一次已登录的页游。脚本会被动读取资源清单，并结合公开主数据补全卡名与剧情标题；它不主动调用页游认证接口。首次扫描只建立基线，不会把已有剧情全部报成更新。</p>
                         <div class="library-toolbar">
                             <div class="library-tabs" role="tablist" aria-label="资源库视图">
                                 <button id="library-tab-updates" type="button" role="tab" aria-selected="true" aria-controls="library-pane-updates" data-library-tab="updates">更新日志</button>
@@ -278,15 +283,13 @@
 
                 <section id="maintenance" class="panel" data-workspace-view="maintenance" aria-labelledby="maintenance-title" hidden>
                     <div class="panel-body">
-                        <div class="section-heading"><div><p class="workspace-kicker">TOOLS & HELP</p><h2 id="maintenance-title" tabindex="-1">维护与帮助</h2><p>页游监听、名称补全与使用说明集中在这里。</p></div></div>
-                        <section class="workspace-section" aria-labelledby="listener-title"><h3 id="listener-title">页游监听与名称资料</h3>
+                        <div class="section-heading"><div><p class="workspace-kicker">TOOLS & HELP</p><h2 id="maintenance-title" tabindex="-1">维护与帮助</h2><p>监听脚本安装、环境配置与使用说明集中在这里。</p></div></div>
+                        <section class="workspace-section" aria-labelledby="listener-title"><h3 id="listener-title">页游监听脚本</h3>
                             <p class="workspace-hint">监听只补充资源目录和标题；卡图、动态卡图仍按使用需求获取。</p>
                             <div class="monitor-actions">
                                 <a class="button-link primary" href="./scripts/ShinyScenarioUpdateMonitor.user.js" target="_blank" rel="noopener noreferrer">安装／更新监听脚本</a>
-                                <a class="button-link" href="https://shinycolors.enza.fun/" target="_blank" rel="noreferrer">打开页游并检查</a>
-                                <button id="game-update-rebuild-labels">补全全库名称</button>
                             </div>
-                            <p id="game-update-note" class="monitor-note">安装／更新监听脚本后，只需刷新一次已登录的页游。脚本会被动读取资源清单，并结合公开主数据补全卡名与剧情标题；它不主动调用页游认证接口。首次扫描只建立基线，不会把已有剧情全部报成更新。</p>
+                            <p class="monitor-note">安装完成后，到“剧情资源库”点击“打开页游并检查”。扫描状态与“补全全库名称”也在资源库顶部。</p>
                             <details class="workspace-details"><summary>脚本安装遇到问题？</summary><div class="details-body"><p class="monitor-note monitor-install-note">Chrome 需先安装并启用 Tampermonkey 或 Violentmonkey；若扩展“详情”页提供“允许用户脚本”，也请将其打开。点击安装后若新标签页只显示脚本源码，说明脚本管理器缺失或未启用。</p></div></details>
                         </section>
                         <section class="workspace-section" aria-labelledby="help-export-title"><h3 id="help-export-title">直出环境与使用指南</h3>
