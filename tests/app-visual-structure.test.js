@@ -47,6 +47,15 @@ test('workspace CSS and navigation are included in portable builds', () => {
     assert.match(workspaceCss, /@media \(max-width: 800px\)/);
 });
 
+test('workshop surfaces remain stable when content height and hover change', () => {
+    assert.match(html, /<body class="workshop-page">/);
+    assert.match(workspaceCss, /\.workshop-page\s*\{[^}]*background-attachment:\s*fixed/);
+    assert.match(workspaceCss, /html\s*\{[^}]*scrollbar-gutter:\s*stable/);
+    assert.match(workspaceCss, /\.workspace-content > \.panel\s*\{[^}]*background:\s*#17151f/);
+    assert.match(workspaceCss, /\.workspace-content \.monitor-tree-node:hover\s*\{[^}]*background:\s*var\(--tree-surface\)/);
+    assert.match(workspaceCss, /\.workspace-content \.monitor-tree-summary:hover\s*\{[^}]*background:/);
+});
+
 test('game check, name completion and their status belong to the library', () => {
     const library = html.slice(html.indexOf('<section id="game-update-monitor"'), html.indexOf('<section id="maintenance"'));
     const maintenance = html.slice(html.indexOf('<section id="maintenance"'));
